@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("//:scion.bzl", "scion_go_binary")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["pushseg.go"],
+    importpath = "github.com/scionproto/scion/go/tools/pushseg",
+    visibility = ["//visibility:private"],
+    deps = [
+        "//go/lib/common:go_default_library",
+        "//go/lib/ctrl/seg",
+        "//go/lib/infra",
+        "//go/lib/infra/modules/seghandler",
+        "//go/lib/scrypto",
+        "//go/lib/spath",
+        "//go/proto",
+    ],
+)
+
+scion_go_binary(
+    name = "pushseg",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

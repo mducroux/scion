@@ -1,0 +1,13 @@
+--- # Single Topology
+ASes:
+  "1-ff00:0:110": # old 1-11
+    core: true
+    voting: true
+    authoritative: true
+    issuing: true
+    mtu: 1500
+links:
+CAs:
+  CA1-1:
+    ISD: 1
+    commonName: CA1-1
