@@ -1,4 +1,4 @@
-module github.com/scionproto/scion
+module github.com/mducroux/scion
 
 require (
 	github.com/BurntSushi/toml v0.3.1
