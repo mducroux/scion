@@ -110,10 +110,10 @@ func TestSenderSend(t *testing.T) {
 		}
 		// Read from connection to unblock sender.
 		ov := &net.UDPAddr{IP: net.IP{127, 0, 0, 42}, Port: 1337}
-		var pkt *snet.SCIONPacket
+		var pkt *snet.Packet
 		conn.EXPECT().WriteTo(gomock.Any(), ov).DoAndReturn(
 			func(ipkt, _ interface{}) error {
-				pkt = ipkt.(*snet.SCIONPacket)
+				pkt = ipkt.(*snet.Packet)
 				return nil
 			},
 		)
@@ -136,7 +136,7 @@ func testPacket() *Msg {
 	}
 }
 
-func checkTestPkt(t *testing.T, s *Sender, msg *Msg, pkt *snet.SCIONPacket) {
+func checkTestPkt(t *testing.T, s *Sender, msg *Msg, pkt *snet.Packet) {
 
 	SoMsg("dst", pkt.Destination, ShouldResemble, msg.Dst)
 	SoMsg("src", pkt.Source, ShouldResemble, snet.SCIONAddress{
@@ -151,7 +151,7 @@ func checkTestPkt(t *testing.T, s *Sender, msg *Msg, pkt *snet.SCIONPacket) {
 	SoMsg("path", pkt.Path, ShouldResemble, (*spath.Path)(path))
 }
 
-// testConn is a packet conn that returns an empty overlay address.
+// testConn is a packet conn that returns an empty underlay address.
 type testConn struct {
 	net.PacketConn
 }

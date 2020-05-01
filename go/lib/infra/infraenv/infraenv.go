@@ -78,7 +78,7 @@ type NetworkConfig struct {
 	// Router is used by various infra modules for path-related operations. A
 	// nil router means only intra-AS traffic is supported.
 	Router snet.Router
-	// SVCRouter is used to discover the overlay addresses of intra-AS SVC
+	// SVCRouter is used to discover the underlay addresses of intra-AS SVC
 	// servers.
 	SVCRouter messenger.LocalSVCRouter
 }
@@ -236,6 +236,7 @@ func (nc *NetworkConfig) buildQUICConfig(conn net.PacketConn) (*messenger.QUICCo
 		TLSConfig: &tls.Config{
 			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,
+			NextProtos:         []string{"SCION"},
 		},
 	}, nil
 }
@@ -324,7 +325,7 @@ func InitInfraEnvironmentFunc(topologyPath string, f func()) {
 // inform local SCION state (CS informing the local SD).
 type ignoreSCMP struct{}
 
-func (ignoreSCMP) Handle(pkt *snet.SCIONPacket) error {
+func (ignoreSCMP) Handle(pkt *snet.Packet) error {
 	// Always reattempt reads from the socket.
 	return nil
 }

@@ -7,7 +7,8 @@
   "composites": {
     "exclude_files": {
       "gazelle/language/go/resolve.go": "",
-      "/io_bazel_rules_docker/": ""
+      "/io_bazel_rules_docker/": "",
+      "/com_github_bazelbuild_buildtools/": ""
     }
   },
   "nilness": {
@@ -33,7 +34,8 @@
     "exclude_files": {
       "gazelle/pathtools/path.go": "",
       "/com_github_antlr_antlr4/runtime/Go/antlr/": "",
-      "/com_github_uber_jaeger_client_go": ""
+      "/com_github_uber_jaeger_client_go": "",
+      "/com_github_marten_seemann_qtls/": ""
     }
   },
   "unsafeptr": {

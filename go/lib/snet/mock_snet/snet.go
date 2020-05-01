@@ -260,10 +260,10 @@ func (m *MockNetwork) EXPECT() *MockNetworkMockRecorder {
 }
 
 // Dial mocks base method
-func (m *MockNetwork) Dial(arg0 context.Context, arg1 string, arg2 *net.UDPAddr, arg3 *snet.UDPAddr, arg4 addr.HostSVC) (snet.Conn, error) {
+func (m *MockNetwork) Dial(arg0 context.Context, arg1 string, arg2 *net.UDPAddr, arg3 *snet.UDPAddr, arg4 addr.HostSVC) (*snet.Conn, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Dial", arg0, arg1, arg2, arg3, arg4)
-	ret0, _ := ret[0].(snet.Conn)
+	ret0, _ := ret[0].(*snet.Conn)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -275,10 +275,10 @@ func (mr *MockNetworkMockRecorder) Dial(arg0, arg1, arg2, arg3, arg4 interface{}
 }
 
 // Listen mocks base method
-func (m *MockNetwork) Listen(arg0 context.Context, arg1 string, arg2 *net.UDPAddr, arg3 addr.HostSVC) (snet.Conn, error) {
+func (m *MockNetwork) Listen(arg0 context.Context, arg1 string, arg2 *net.UDPAddr, arg3 addr.HostSVC) (*snet.Conn, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Listen", arg0, arg1, arg2, arg3)
-	ret0, _ := ret[0].(snet.Conn)
+	ret0, _ := ret[0].(*snet.Conn)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -327,7 +327,7 @@ func (mr *MockPacketConnMockRecorder) Close() *gomock.Call {
 }
 
 // ReadFrom mocks base method
-func (m *MockPacketConn) ReadFrom(arg0 *snet.SCIONPacket, arg1 *net.UDPAddr) error {
+func (m *MockPacketConn) ReadFrom(arg0 *snet.Packet, arg1 *net.UDPAddr) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReadFrom", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -383,7 +383,7 @@ func (mr *MockPacketConnMockRecorder) SetWriteDeadline(arg0 interface{}) *gomock
 }
 
 // WriteTo mocks base method
-func (m *MockPacketConn) WriteTo(arg0 *snet.SCIONPacket, arg1 *net.UDPAddr) error {
+func (m *MockPacketConn) WriteTo(arg0 *snet.Packet, arg1 *net.UDPAddr) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteTo", arg0, arg1)
 	ret0, _ := ret[0].(error)
@@ -503,20 +503,6 @@ func (mr *MockPathMockRecorder) MTU() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MTU", reflect.TypeOf((*MockPath)(nil).MTU))
 }
 
-// OverlayNextHop mocks base method
-func (m *MockPath) OverlayNextHop() *net.UDPAddr {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "OverlayNextHop")
-	ret0, _ := ret[0].(*net.UDPAddr)
-	return ret0
-}
-
-// OverlayNextHop indicates an expected call of OverlayNextHop
-func (mr *MockPathMockRecorder) OverlayNextHop() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "OverlayNextHop", reflect.TypeOf((*MockPath)(nil).OverlayNextHop))
-}
-
 // Path mocks base method
 func (m *MockPath) Path() *spath.Path {
 	m.ctrl.T.Helper()
@@ -529,6 +515,20 @@ func (m *MockPath) Path() *spath.Path {
 func (mr *MockPathMockRecorder) Path() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Path", reflect.TypeOf((*MockPath)(nil).Path))
+}
+
+// UnderlayNextHop mocks base method
+func (m *MockPath) UnderlayNextHop() *net.UDPAddr {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UnderlayNextHop")
+	ret0, _ := ret[0].(*net.UDPAddr)
+	return ret0
+}
+
+// UnderlayNextHop indicates an expected call of UnderlayNextHop
+func (mr *MockPathMockRecorder) UnderlayNextHop() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UnderlayNextHop", reflect.TypeOf((*MockPath)(nil).UnderlayNextHop))
 }
 
 // MockPathQuerier is a mock of PathQuerier interface

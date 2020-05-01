@@ -115,13 +115,13 @@ func realMain() int {
 	metrics.InitBSMetrics()
 	metrics.InitPSMetrics()
 
-	pathDB, revCache, err := pathstorage.NewPathStorage(cfg.PS.PathDB, cfg.PS.RevCache)
+	pathDB, revCache, err := pathstorage.NewPathStorage(cfg.PathDB)
 	if err != nil {
 		log.Crit("Unable to initialize path storage", "err", err)
 		return 1
 	}
 	defer revCache.Close()
-	pathDB = pathdb.WithMetrics(string(cfg.PS.PathDB.Backend()), pathDB)
+	pathDB = pathdb.WithMetrics(string(cfg.PathDB.Backend()), pathDB)
 	defer pathDB.Close()
 
 	topo := itopo.Get()
@@ -283,7 +283,7 @@ func realMain() int {
 	segReqHandler := segreq.NewHandler(args)
 	msgr.AddHandler(infra.SegRequest, segReqHandler)
 	msgr.AddHandler(infra.SegReg, handlers.NewSegRegHandler(args))
-	if cfg.PS.SegSync && topo.Core() {
+	if topo.Core() {
 		// Old down segment sync mechanism
 		msgr.AddHandler(infra.SegSync, handlers.NewSyncHandler(args))
 	}
@@ -321,13 +321,16 @@ func realMain() int {
 	}
 	// We do not need to drain the connection, since the src address is spoofed
 	// to contain the topo address.
-	a := topo.PublicAddress(addr.SvcBS, cfg.General.ID)
-	ohpAddress := &net.UDPAddr{
-		IP: append(a.IP[:0:0], a.IP...), Port: 0,
-	}
+	ohpAddress := snet.CopyUDPAddr(topo.PublicAddress(addr.SvcBS, cfg.General.ID))
+	ohpAddress.Port = 0
 	conn, _, err := pktDisp.Register(context.Background(), topo.IA(), ohpAddress, addr.SvcNone)
 	if err != nil {
 		log.Crit("Unable to create SCION packet conn", "err", err)
+		return 1
+	}
+	propPolicy, err := loadPolicy(cfg.BS.Policies.Propagation, beacon.PropPolicy)
+	if err != nil {
+		log.Crit("Unable to load propagation policy", "err", err)
 		return 1
 	}
 	tasks = &periodicTasks{
@@ -337,6 +340,7 @@ func realMain() int {
 		trustStore:   trustStore,
 		trustDB:      trustDB,
 		store:        beaconStore,
+		allowIsdLoop: *propPolicy.Filter.AllowIsdLoop,
 		pathDB:       pathDB,
 		msgr:         msgr,
 		topoProvider: itopo.Provider(),
@@ -460,7 +464,7 @@ func (t *periodicTasks) Start() error {
 	// t.corePusher = t.startCorePusher()
 	// t.reissuance = t.startReissuance(t.corePusher)
 
-	if cfg.PS.SegSync && itopo.Get().Core() {
+	if itopo.Get().Core() {
 		t.segSyncers, err = segsyncer.StartAll(t.args, t.msgr)
 		if err != nil {
 			return common.NewBasicError("Unable to start seg syncer", err)
@@ -700,12 +704,16 @@ func maxExpTimeFactory(store beaconstorage.Store, p beacon.PolicyType) func() sp
 }
 
 func setupBasic() error {
-	if _, err := toml.DecodeFile(env.ConfigFile(), &cfg); err != nil {
-		return serrors.New("Failed to load config", "err", err, "file", env.ConfigFile())
+	md, err := toml.DecodeFile(env.ConfigFile(), &cfg)
+	if err != nil {
+		return serrors.WrapStr("Failed to load config", err, "file", env.ConfigFile())
+	}
+	if len(md.Undecoded()) > 0 {
+		return serrors.New("Failed to load config: undecoded keys", "undecoded", md.Undecoded())
 	}
 	cfg.InitDefaults()
 	if err := log.Setup(cfg.Logging); err != nil {
-		return serrors.New("Failed to initialize logging", "err", err)
+		return serrors.WrapStr("Failed to initialize logging", err)
 	}
 	prom.ExportElementID(cfg.General.ID)
 	return env.LogAppStarted(common.CS, cfg.General.ID)
@@ -715,7 +723,7 @@ func setup() error {
 	if err := cfg.Validate(); err != nil {
 		return common.NewBasicError("Unable to validate config", err)
 	}
-	topo, err := topology.FromJSONFile(cfg.General.Topology)
+	topo, err := topology.FromJSONFile(cfg.General.Topology())
 	if err != nil {
 		return common.NewBasicError("Unable to load topology", err)
 	}
@@ -741,7 +749,7 @@ func initTopo(topo topology.Topology) error {
 	if err := itopo.Update(topo); err != nil {
 		return serrors.WrapStr("Unable to set initial static topology", err)
 	}
-	infraenv.InitInfraEnvironment(cfg.General.Topology)
+	infraenv.InitInfraEnvironment(cfg.General.Topology())
 	return nil
 }
 

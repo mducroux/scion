@@ -36,8 +36,8 @@ const (
 
 var (
 	// Don't verify the server's cert, as we are not using the TLS PKI.
-	cliTlsCfg = &tls.Config{InsecureSkipVerify: true}
-	srvTlsCfg = &tls.Config{}
+	cliTlsCfg = &tls.Config{InsecureSkipVerify: true, NextProtos: []string{"SCION"}}
+	srvTlsCfg = &tls.Config{NextProtos: []string{"SCION"}}
 )
 
 func Init(keyPath, pemPath string) error {
@@ -81,7 +81,7 @@ func Listen(network *snet.SCIONNetwork, listen *net.UDPAddr,
 }
 
 func sListen(network *snet.SCIONNetwork, listen *net.UDPAddr,
-	svc addr.HostSVC) (snet.Conn, error) {
+	svc addr.HostSVC) (*snet.Conn, error) {
 
 	if network == nil {
 		return nil, serrors.New("squic:  SCION network must not be nil")
