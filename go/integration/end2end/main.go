@@ -24,6 +24,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/opentracing/opentracing-go/ext"
+
 	"github.com/scionproto/scion/go/integration"
 	"github.com/scionproto/scion/go/lib/addr"
 	"github.com/scionproto/scion/go/lib/common"
@@ -47,7 +49,7 @@ const (
 
 var (
 	remote  snet.UDPAddr
-	timeout = &util.DurWrap{Duration: 2 * time.Second}
+	timeout = &util.DurWrap{Duration: 10 * time.Second}
 )
 
 func main() {
@@ -97,6 +99,9 @@ type server struct {
 }
 
 func (s server) run() {
+	log.Info("Starting server", "ia", integration.Local.IA)
+	defer log.Info("Finished server", "ia", integration.Local.IA)
+
 	connFactory := &snet.DefaultPacketDispatcherService{
 		Dispatcher: reliable.NewDispatcher(""),
 		SCMPHandler: snet.NewSCMPHandler(
@@ -111,12 +116,12 @@ func (s server) run() {
 	if len(os.Getenv(libint.GoIntegrationEnv)) > 0 {
 		// Needed for integration test ready signal.
 		fmt.Printf("Port=%d\n", port)
-		fmt.Printf("%s%s\n", libint.ReadySignal, integration.Local.IA)
+		fmt.Printf("%s%s\n\n", libint.ReadySignal, integration.Local.IA)
 	}
 	log.Debug("Listening", "local", fmt.Sprintf("%v:%d", integration.Local.Host, port))
 	// Receive ping message
 	for {
-		var p snet.SCIONPacket
+		var p snet.Packet
 		var ov net.UDPAddr
 		if err := conn.ReadFrom(&p, &ov); err != nil {
 			log.Error("Error reading packet", "err", err)
@@ -125,8 +130,7 @@ func (s server) run() {
 		if string(p.Payload.(common.RawBytes)) != ping+integration.Local.IA.String() {
 			integration.LogFatal("Received unexpected data", "data", p.Payload.(common.RawBytes))
 		}
-		log.Debug(fmt.Sprintf("Ping received from %s, sending pong.",
-			p.Source))
+		log.Debug(fmt.Sprintf("Ping received from %s, sending pong.", p.Source))
 		// Send pong
 
 		if p.Path != nil {
@@ -141,7 +145,7 @@ func (s server) run() {
 		if err := conn.WriteTo(&p, &ov); err != nil {
 			integration.LogFatal("Unable to send reply", "err", err)
 		}
-		log.Debug(fmt.Sprintf("Sent pong to %s", p.Destination))
+		log.Info("Sent pong to", "client", p.Destination)
 	}
 }
 
@@ -152,6 +156,10 @@ type client struct {
 }
 
 func (c client) run() int {
+	pair := fmt.Sprintf("%s -> %s", integration.Local.IA, remote.IA)
+	log.Info("Starting", "pair", pair)
+	defer log.Info("Finished", "pair", pair)
+	defer integration.Done(integration.Local.IA, remote.IA)
 	connFactory := &snet.DefaultPacketDispatcherService{
 		Dispatcher: reliable.NewDispatcher(""),
 		SCMPHandler: snet.NewSCMPHandler(
@@ -184,14 +192,15 @@ func (c client) attemptRequest(n int) bool {
 	// Send ping
 	if err := c.ping(ctx, n); err != nil {
 		logger.Error("Could not send packet", "err", err)
+		ext.Error.Set(span, true)
 		return false
 	}
 	// Receive pong
 	if err := c.pong(ctx); err != nil {
 		logger.Debug("Error receiving pong", "err", err)
+		ext.Error.Set(span, true)
 		return false
 	}
-	logger.Info("Received pong")
 	return true
 }
 
@@ -210,8 +219,8 @@ func (c client) ping(ctx context.Context, n int) error {
 	// API guarantees return values are ok
 	_, _ = rand.Read(debugID[:])
 	return c.conn.WriteTo(
-		&snet.SCIONPacket{
-			SCIONPacketInfo: snet.SCIONPacketInfo{
+		&snet.Packet{
+			PacketInfo: snet.PacketInfo{
 				Destination: snet.SCIONAddress{
 					IA:   remote.IA,
 					Host: addr.HostFromIP(remote.Host.IP),
@@ -255,13 +264,13 @@ func (c client) getRemote(ctx context.Context, n int) error {
 	path := paths[0]
 	// Extract forwarding path from sciond response
 	remote.Path = path.Path()
-	remote.NextHop = path.OverlayNextHop()
+	remote.NextHop = path.UnderlayNextHop()
 	return nil
 }
 
 func (c client) pong(ctx context.Context) error {
 	c.conn.SetReadDeadline(getDeadline(ctx))
-	var p snet.SCIONPacket
+	var p snet.Packet
 	var ov net.UDPAddr
 	if err := c.conn.ReadFrom(&p, &ov); err != nil {
 		return common.NewBasicError("Error reading packet", err)
@@ -271,7 +280,7 @@ func (c client) pong(ctx context.Context) error {
 		return common.NewBasicError("Received unexpected data", nil, "data",
 			string(p.Payload.(common.RawBytes)), "expected", expected)
 	}
-	log.Debug(fmt.Sprintf("Received pong from %s", remote.IA))
+	log.Info("Received pong", "server", p.Source)
 	return nil
 }
 

@@ -87,7 +87,7 @@ func realMain() int {
 		log.Crit("Setup failed", "err", err)
 		return 1
 	}
-	pathDB, revCache, err := pathstorage.NewPathStorage(cfg.SD.PathDB, cfg.SD.RevCache)
+	pathDB, revCache, err := pathstorage.NewPathStorage(cfg.PathDB)
 	if err != nil {
 		log.Crit("Unable to initialize path storage", "err", err)
 		return 1
@@ -204,12 +204,16 @@ func (v verificationFactory) NewVerifier() infra.Verifier {
 }
 
 func setupBasic() error {
-	if _, err := toml.DecodeFile(env.ConfigFile(), &cfg); err != nil {
-		return serrors.New("Failed to load config", "err", err, "file", env.ConfigFile())
+	md, err := toml.DecodeFile(env.ConfigFile(), &cfg)
+	if err != nil {
+		return serrors.WrapStr("Failed to load config", err, "file", env.ConfigFile())
+	}
+	if len(md.Undecoded()) > 0 {
+		return serrors.New("Failed to load config: undecoded keys", "undecoded", md.Undecoded())
 	}
 	cfg.InitDefaults()
 	if err := log.Setup(cfg.Logging); err != nil {
-		return serrors.New("Failed to initialize logging", "err", err)
+		return serrors.WrapStr("Failed to initialize logging", err)
 	}
 	prom.ExportElementID(cfg.General.ID)
 	return env.LogAppStarted("SD", cfg.General.ID)
@@ -219,7 +223,7 @@ func setup() error {
 	if err := cfg.Validate(); err != nil {
 		return common.NewBasicError("unable to validate config", err)
 	}
-	topo, err := topology.FromJSONFile(cfg.General.Topology)
+	topo, err := topology.FromJSONFile(cfg.General.Topology())
 	if err != nil {
 		return common.NewBasicError("unable to load topology", err)
 	}
@@ -227,7 +231,7 @@ func setup() error {
 	if err := itopo.Update(topo); err != nil {
 		return common.NewBasicError("unable to set initial static topology", err)
 	}
-	infraenv.InitInfraEnvironment(cfg.General.Topology)
+	infraenv.InitInfraEnvironment(cfg.General.Topology())
 	return nil
 }
 

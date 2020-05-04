@@ -43,7 +43,7 @@ func TestResolver(t *testing.T) {
 		dstIA := xtest.MustParseIA("1-ff00:0:2")
 		mockPath := mock_snet.NewMockPath(ctrl)
 		mockPath.EXPECT().Path().Return(nil).AnyTimes()
-		mockPath.EXPECT().OverlayNextHop().Return(nil).AnyTimes()
+		mockPath.EXPECT().UnderlayNextHop().Return(nil).AnyTimes()
 		mockPath.EXPECT().Destination().Return(dstIA).AnyTimes()
 
 		Convey("If opening up port fails, return error and no reply", func() {
@@ -87,26 +87,26 @@ func TestRoundTripper(t *testing.T) {
 	}
 	testCases := []struct {
 		Description   string
-		InputPacket   *snet.SCIONPacket
-		InputOverlay  *net.UDPAddr
+		InputPacket   *snet.Packet
+		InputUnderlay *net.UDPAddr
 		ExpectedError bool
 		ExpectedReply *svc.Reply
 		ConnSetup     func(*mock_snet.MockPacketConn)
 	}{
 		{
 			Description:   "nil packet returns error",
-			InputOverlay:  &net.UDPAddr{},
+			InputUnderlay: &net.UDPAddr{},
 			ExpectedError: true,
 		},
 		{
-			Description:   "nil overlay returns error",
-			InputPacket:   &snet.SCIONPacket{},
+			Description:   "nil underlay returns error",
+			InputPacket:   &snet.Packet{},
 			ExpectedError: true,
 		},
 		{
 			Description:   "if write fails, return error",
-			InputPacket:   &snet.SCIONPacket{},
-			InputOverlay:  &net.UDPAddr{},
+			InputPacket:   &snet.Packet{},
+			InputUnderlay: &net.UDPAddr{},
 			ExpectedError: true,
 			ConnSetup: func(c *mock_snet.MockPacketConn) {
 				c.EXPECT().WriteTo(gomock.Any(), gomock.Any()).Return(errors.New("write err"))
@@ -114,8 +114,8 @@ func TestRoundTripper(t *testing.T) {
 		},
 		{
 			Description:   "if read fails, return error",
-			InputPacket:   &snet.SCIONPacket{},
-			InputOverlay:  &net.UDPAddr{},
+			InputPacket:   &snet.Packet{},
+			InputUnderlay: &net.UDPAddr{},
 			ExpectedError: true,
 			ConnSetup: func(c *mock_snet.MockPacketConn) {
 				c.EXPECT().WriteTo(gomock.Any(), gomock.Any()).Return(nil)
@@ -124,13 +124,13 @@ func TestRoundTripper(t *testing.T) {
 		},
 		{
 			Description:   "if bad payload type, return error",
-			InputPacket:   &snet.SCIONPacket{},
-			InputOverlay:  &net.UDPAddr{},
+			InputPacket:   &snet.Packet{},
+			InputUnderlay: &net.UDPAddr{},
 			ExpectedError: true,
 			ConnSetup: func(c *mock_snet.MockPacketConn) {
 				c.EXPECT().WriteTo(gomock.Any(), gomock.Any()).Return(nil)
 				c.EXPECT().ReadFrom(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(pkt *snet.SCIONPacket, _ *net.UDPAddr) error {
+					func(pkt *snet.Packet, _ *net.UDPAddr) error {
 						pkt.Payload = &ctrl.SignedPld{}
 						return nil
 					},
@@ -139,13 +139,13 @@ func TestRoundTripper(t *testing.T) {
 		},
 		{
 			Description:   "if reply cannot be parsed, return error",
-			InputPacket:   &snet.SCIONPacket{},
-			InputOverlay:  &net.UDPAddr{},
+			InputPacket:   &snet.Packet{},
+			InputUnderlay: &net.UDPAddr{},
 			ExpectedError: true,
 			ConnSetup: func(c *mock_snet.MockPacketConn) {
 				c.EXPECT().WriteTo(gomock.Any(), gomock.Any()).Return(nil)
 				c.EXPECT().ReadFrom(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(pkt *snet.SCIONPacket, _ *net.UDPAddr) error {
+					func(pkt *snet.Packet, _ *net.UDPAddr) error {
 						pkt.Payload = common.RawBytes{42}
 						return nil
 					},
@@ -153,13 +153,13 @@ func TestRoundTripper(t *testing.T) {
 			},
 		},
 		{
-			Description:  "successful operation",
-			InputPacket:  &snet.SCIONPacket{},
-			InputOverlay: &net.UDPAddr{},
+			Description:   "successful operation",
+			InputPacket:   &snet.Packet{},
+			InputUnderlay: &net.UDPAddr{},
 			ConnSetup: func(c *mock_snet.MockPacketConn) {
 				c.EXPECT().WriteTo(gomock.Any(), gomock.Any()).Return(nil)
 				c.EXPECT().ReadFrom(gomock.Any(), gomock.Any()).DoAndReturn(
-					func(pkt *snet.SCIONPacket, _ *net.UDPAddr) error {
+					func(pkt *snet.Packet, _ *net.UDPAddr) error {
 						buf := &bytes.Buffer{}
 						if err := testReply.SerializeTo(buf); err != nil {
 							panic(err)
@@ -184,7 +184,7 @@ func TestRoundTripper(t *testing.T) {
 				}
 				roundTripper := svc.DefaultRoundTripper()
 				reply, err := roundTripper.RoundTrip(context.Background(), conn, tc.InputPacket,
-					tc.InputOverlay)
+					tc.InputUnderlay)
 				xtest.SoMsgError("err", err, tc.ExpectedError)
 				// FIXME(scrye): also test that paths are processed correctly
 				if reply != nil {

@@ -16,6 +16,7 @@ cmd_topo_clean() {
     fi
     supervisor/supervisor.sh shutdown
     stop_jaeger
+    rm -rf traces/*
     mkdir -p logs traces gen gen-cache
     find gen gen-cache -mindepth 1 -maxdepth 1 -exec rm -r {} +
 }
@@ -53,9 +54,9 @@ cmd_run() {
         make -s || exit 1
         if is_docker_be; then
             echo "Build perapp images"
-            ./tools/quiet make -C docker/perapp bazel
+            ./tools/quiet make -C docker prod
             echo "Build scion tester"
-            ./tools/quiet ./docker.sh tester
+            ./tools/quiet make -C docker test
         fi
     fi
     run_setup
@@ -96,7 +97,7 @@ stop_jaeger() {
         return
     fi
     echo "Stopping jaeger..."
-    ./tools/quiet ./tools/dc jaeger down
+    ./tools/quiet ./tools/dc jaeger down -v
 }
 
 cmd_mstart() {
@@ -269,6 +270,7 @@ cmd_lint() {
     local ret=0
     py_lint || ret=1
     go_lint || ret=1
+    bazel_lint || ret=1
     md_lint || ret=1
     return $ret
 }
@@ -323,6 +325,16 @@ go_lint() {
     make gazelle GAZELLE_MODE=diff || ret=1
     # Clean up the binaries
     rm -rf $TMPDIR
+    return $ret
+}
+
+bazel_lint() {
+    lint_header "bazel"
+    local ret=0
+    bazel run //:buildifier_check || ret=1
+    if [ $ret -ne 0 ]; then
+        printf "\nto fix run:\nbazel run //:buildifier\n"
+    fi
     return $ret
 }
 

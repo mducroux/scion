@@ -29,12 +29,12 @@ import (
 	"github.com/scionproto/scion/go/lib/scrypto/trc"
 	"github.com/scionproto/scion/go/lib/serrors"
 	jsontopo "github.com/scionproto/scion/go/lib/topology/json"
-	"github.com/scionproto/scion/go/lib/topology/overlay"
+	"github.com/scionproto/scion/go/lib/topology/underlay"
 	"github.com/scionproto/scion/go/proto"
 )
 
-// EndhostPort is the overlay port that the dispatcher binds to on non-routers.
-const EndhostPort = overlay.EndhostPort
+// EndhostPort is the underlay port that the dispatcher binds to on non-routers.
+const EndhostPort = underlay.EndhostPort
 
 type (
 	// RWTopology is the topology type for applications and libraries that need write
@@ -58,7 +58,6 @@ type (
 	// Additionally, there is a map from those names to TopoAddr structs.
 	RWTopology struct {
 		Timestamp  time.Time
-		TTL        time.Duration
 		IA         addr.IA
 		Attributes trc.Attributes
 		MTU        int
@@ -98,7 +97,7 @@ type (
 		ID           common.IFIDType
 		BRName       string
 		CtrlAddrs    *TopoAddr
-		Underlay     overlay.Type
+		Underlay     underlay.Type
 		InternalAddr *net.UDPAddr
 		Local        *net.UDPAddr
 		Remote       *net.UDPAddr
@@ -173,16 +172,12 @@ func (t *RWTopology) populateMeta(raw *jsontopo.Topology) error {
 	// These fields can be simply copied
 	var err error
 	t.Timestamp = time.Unix(raw.Timestamp, 0)
-	t.TTL = time.Duration(raw.TTL) * time.Second
 
 	if t.IA, err = addr.IAFromString(raw.IA); err != nil {
 		return err
 	}
 	if t.IA.IsWildcard() {
 		return common.NewBasicError("IA contains wildcard", nil, "ia", t.IA)
-	}
-	if _, err = overlay.TypeFromString(raw.Overlay); err != nil {
-		return err
 	}
 	t.MTU = raw.MTU
 	t.Attributes = raw.Attributes
@@ -191,17 +186,17 @@ func (t *RWTopology) populateMeta(raw *jsontopo.Topology) error {
 
 func (t *RWTopology) populateBR(raw *jsontopo.Topology) error {
 	for name, rawBr := range raw.BorderRouters {
-		if rawBr.CtrlAddr == nil {
+		if rawBr.CtrlAddr == "" {
 			return common.NewBasicError("Missing Control Address", nil, "br", name)
 		}
-		if rawBr.InternalAddrs == nil {
+		if rawBr.InternalAddr == "" {
 			return common.NewBasicError("Missing Internal Address", nil, "br", name)
 		}
-		ctrlAddr, err := rawAddrMapToTopoAddr(rawBr.CtrlAddr)
+		ctrlAddr, err := rawAddrToTopoAddr(rawBr.CtrlAddr)
 		if err != nil {
 			return serrors.WrapStr("unable to extract SCION control-plane address", err)
 		}
-		intAddr, err := rawBRAddrMapToUDPAddr(rawBr.InternalAddrs)
+		intAddr, err := rawAddrToUDPAddr(rawBr.InternalAddr)
 		if err != nil {
 			return serrors.WrapStr("unable to extract underlay internal data-plane address", err)
 		}
@@ -235,22 +230,22 @@ func (t *RWTopology) populateBR(raw *jsontopo.Topology) error {
 			}
 			// These fields are only necessary for the border router.
 			// Parsing should not fail if they are missing.
-			if rawIntf.Underlay == "" && rawIntf.BindUnderlay == nil &&
-				rawIntf.RemoteUnderlay == nil {
+			if rawIntf.Underlay.Bind == "" && rawIntf.Underlay.Remote == "" {
 				brInfo.IFs[ifid] = &ifinfo
 				t.IFInfoMap[ifid] = ifinfo
 				continue
-			}
-			if ifinfo.Underlay, err = overlay.TypeFromString(rawIntf.Underlay); err != nil {
-				return serrors.WrapStr("unable to extract underlay type", err)
 			}
 			if ifinfo.Local, err = rawBRIntfTopoBRAddr(rawIntf); err != nil {
 				return serrors.WrapStr("unable to extract "+
 					"underlay external data-plane local address", err)
 			}
-			if ifinfo.Remote, err = rawBRIntfRemoteBRAddr(rawIntf, ifinfo.Underlay); err != nil {
+			if ifinfo.Remote, err = rawAddrToUDPAddr(rawIntf.Underlay.Remote); err != nil {
 				return serrors.WrapStr("unable to extract "+
 					"underlay external data-plane remote address", err)
+			}
+			ifinfo.Underlay = underlay.UDPIPv6
+			if ifinfo.Local.IP.To4() != nil && ifinfo.Remote.IP.To4() != nil {
+				ifinfo.Underlay = underlay.UDPIPv4
 			}
 			brInfo.IFs[ifid] = &ifinfo
 			t.IFInfoMap[ifid] = ifinfo
@@ -279,18 +274,9 @@ func (t *RWTopology) populateServices(raw *jsontopo.Topology) error {
 }
 
 // Active returns whether the topology is active at the point in time specified by the argument.
-// A topology is active if it is within a TTL window after the timestamp.
+// A topology is active if now is after the timestamp.
 func (t *RWTopology) Active(now time.Time) bool {
-	return !now.Before(t.Timestamp) && (t.TTL == 0 ||
-		now.Before(t.Timestamp.Add(t.TTL)))
-}
-
-// Expiry returns the expiration time of the topology. If TTL is zero, the zero value is returned.
-func (t *RWTopology) Expiry() time.Time {
-	if t.TTL == 0 {
-		return time.Time{}
-	}
-	return t.Timestamp.Add(t.TTL)
+	return !now.Before(t.Timestamp)
 }
 
 // GetTopoAddr returns the address information for the process of the requested type with the
@@ -333,6 +319,72 @@ func (t *RWTopology) getSvcInfo(svc proto.ServiceType) (*svcInfo, error) {
 	}
 }
 
+// Copy creates a deep copy of the object.
+func (t *RWTopology) Copy() *RWTopology {
+	if t == nil {
+		return nil
+	}
+	return &RWTopology{
+		Timestamp:  t.Timestamp,
+		IA:         t.IA,
+		MTU:        t.MTU,
+		Attributes: append(t.Attributes[:0:0], t.Attributes...),
+
+		BR:        copyBRMap(t.BR),
+		BRNames:   append(t.BRNames[:0:0], t.BRNames...),
+		IFInfoMap: t.IFInfoMap.copy(),
+
+		CS:  t.CS.copy(),
+		SIG: t.SIG.copy(),
+	}
+}
+
+func copyBRMap(m map[string]BRInfo) map[string]BRInfo {
+	if m == nil {
+		return nil
+	}
+	newM := make(map[string]BRInfo)
+	for k, v := range m {
+		newM[k] = *v.copy()
+	}
+	return newM
+}
+
+func (i *BRInfo) copy() *BRInfo {
+	if i == nil {
+		return nil
+	}
+	return &BRInfo{
+		Name:         i.Name,
+		CtrlAddrs:    i.CtrlAddrs.copy(),
+		InternalAddr: copyUDPAddr(i.InternalAddr),
+		IFIDs:        append(i.IFIDs[:0:0], i.IFIDs...),
+		IFs:          copyIFsMap(i.IFs),
+	}
+}
+
+func copyIFsMap(m map[common.IFIDType]*IFInfo) map[common.IFIDType]*IFInfo {
+	if m == nil {
+		return nil
+	}
+	newM := make(map[common.IFIDType]*IFInfo)
+	for k, v := range m {
+		newM[k] = v.copy()
+	}
+	return newM
+}
+
+func (m IfInfoMap) copy() IfInfoMap {
+	if m == nil {
+		return nil
+	}
+	newM := make(IfInfoMap)
+	for k, v := range m {
+		newM[k] = *v.copy()
+	}
+	return newM
+}
+
 // svcInfo contains topology information for a single SCION service
 type svcInfo struct {
 	idTopoAddrMap IDAddrMap
@@ -349,10 +401,10 @@ func (svc *svcInfo) getAllTopoAddrs() []TopoAddr {
 func svcMapFromRaw(ras map[string]*jsontopo.ServerInfo) (IDAddrMap, error) {
 	svcMap := make(IDAddrMap)
 	for name, svc := range ras {
-		svcTopoAddr, err := rawAddrMapToTopoAddr(svc.Addrs)
+		svcTopoAddr, err := rawAddrToTopoAddr(svc.Addr)
 		if err != nil {
-			return nil, serrors.WrapStr("could not extract address from address_map", err,
-				"address_map", svc.Addrs, "process_name", name)
+			return nil, serrors.WrapStr("could not parse address", err,
+				"address", svc.Addr, "process_name", name)
 		}
 		svcMap[name] = *svcTopoAddr
 	}
@@ -366,6 +418,19 @@ func (m IDAddrMap) GetByID(id string) *TopoAddr {
 		return &cp
 	}
 	return nil
+}
+
+func (m IDAddrMap) copy() IDAddrMap {
+	if m == nil {
+		return nil
+	}
+	newM := make(IDAddrMap)
+	for k, v := range m {
+		// This has the potential of making a _lot_ of shallow copies, but we can't really avoid it
+		// due to the value type in the map.
+		newM[k] = *v.copy()
+	}
+	return newM
 }
 
 // CheckLinks checks whether the link types are compatible with whether the AS is core or not.
@@ -389,9 +454,29 @@ func (i IFInfo) CheckLinks(isCore bool, brName string) error {
 }
 
 func (i IFInfo) String() string {
-	return fmt.Sprintf("IFinfo: Name[%s] IntAddr[%+v] CtrlAddr[%+v] Overlay:%s Local:%+v "+
+	return fmt.Sprintf("IFinfo: Name[%s] IntAddr[%+v] CtrlAddr[%+v] Underlay:%s Local:%+v "+
 		"Remote:%+v Bw:%d IA:%s Type:%v MTU:%d", i.BRName, i.InternalAddr, i.CtrlAddrs, i.Underlay,
 		i.Local, i.Remote, i.Bandwidth, i.IA, i.LinkType, i.MTU)
+}
+
+func (i *IFInfo) copy() *IFInfo {
+	if i == nil {
+		return nil
+	}
+	return &IFInfo{
+		ID:           i.ID,
+		BRName:       i.BRName,
+		CtrlAddrs:    i.CtrlAddrs.copy(),
+		Underlay:     i.Underlay,
+		InternalAddr: copyUDPAddr(i.InternalAddr),
+		Local:        copyUDPAddr(i.Local),
+		Remote:       copyUDPAddr(i.Remote),
+		RemoteIFID:   i.RemoteIFID,
+		Bandwidth:    i.Bandwidth,
+		IA:           i.IA,
+		LinkType:     i.LinkType,
+		MTU:          i.MTU,
+	}
 }
 
 // UnderlayAddr returns the underlay address interpreted as a net.UDPAddr.
@@ -412,10 +497,7 @@ func (a *TopoAddr) copy() *TopoAddr {
 		return nil
 	}
 	return &TopoAddr{
-		SCIONAddress: &net.UDPAddr{
-			IP:   append(a.SCIONAddress.IP[:0:0], a.SCIONAddress.IP...),
-			Port: a.SCIONAddress.Port,
-		},
+		SCIONAddress:    copyUDPAddr(a.SCIONAddress),
 		UnderlayAddress: toUDPAddr(a.UnderlayAddress),
 	}
 }
@@ -428,10 +510,7 @@ func toUDPAddr(a net.Addr) *net.UDPAddr {
 	if !ok {
 		return nil
 	}
-	return &net.UDPAddr{
-		IP:   append(udpAddr.IP[:0:0], udpAddr.IP...),
-		Port: udpAddr.Port,
-	}
+	return copyUDPAddr(udpAddr)
 }
 
 // ServiceNames is a slice of process names (e.g., "bs-1", "bs-2").
@@ -446,6 +525,10 @@ func (s ServiceNames) GetRandom() (string, error) {
 	return s[rand.Intn(numServers)], nil
 }
 
+func (s ServiceNames) copy() ServiceNames {
+	return append(s[:0:0], s...)
+}
+
 func copyUDPAddr(a *net.UDPAddr) *net.UDPAddr {
 	if a == nil {
 		return nil
@@ -453,5 +536,6 @@ func copyUDPAddr(a *net.UDPAddr) *net.UDPAddr {
 	return &net.UDPAddr{
 		IP:   append(a.IP[:0:0], a.IP...),
 		Port: a.Port,
+		Zone: a.Zone,
 	}
 }

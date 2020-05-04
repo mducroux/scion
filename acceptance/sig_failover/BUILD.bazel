@@ -5,67 +5,68 @@ sh_test(
     size = "small",
     srcs = ["test"],
     data = [
-        "//go/tools/udpproxy:udpproxy",
-        ":dispatcher1",
-        ":dispatcher2",
-        ":sig1",
-        ":sig2",
         "docker-compose.yml",
+        ":dispatcher1.tar",
+        ":dispatcher2.tar",
+        ":sig1.tar",
+        ":sig2.tar",
+        ":udpproxy.tar",
     ],
+)
+
+container_image(
+    name = "udpproxy",
+    base = "//go/tools/udpproxy",
 )
 
 container_image(
     name = "dispatcher1",
-    base = "//docker/perapp:dispatcher_go_debug",
-    files = ["testdata/1-ff00_0_110/dispatcher/disp.toml"],
+    base = "//docker:dispatcher_debug",
     entrypoint = [
-        "/app/godispatcher",
+        "/app/dispatcher",
         "-config",
         "/disp.toml",
     ],
-    stamp = True,
+    files = ["testdata/1-ff00_0_110/dispatcher/disp.toml"],
 )
 
 container_image(
     name = "dispatcher2",
-    base = "//docker/perapp:dispatcher_go_debug",
-    files = ["testdata/1-ff00_0_111/dispatcher/disp.toml"],
+    base = "//docker:dispatcher_debug",
     entrypoint = [
-        "/app/godispatcher",
+        "/app/dispatcher",
         "-config",
         "/disp.toml",
     ],
-    stamp = True,
+    files = ["testdata/1-ff00_0_111/dispatcher/disp.toml"],
 )
 
 container_image(
     name = "sig1",
-    base = "//docker/perapp:sig_debug",
-    files = [
-        "testdata/1-ff00_0_110/sig/cfg.json",
-        "testdata/1-ff00_0_110/sig/sig.toml",
-        "testdata/1-ff00_0_110/sig/fake_sciond.json",
-    ],
+    base = "//docker:sig_debug",
     entrypoint = [
         "/app/sig",
         "-config",
         "/sig.toml",
     ],
-    stamp = True,
+    files = [
+        "testdata/1-ff00_0_110/sig/cfg.json",
+        "testdata/1-ff00_0_110/sig/fake_sciond.json",
+        "testdata/1-ff00_0_110/sig/sig.toml",
+    ],
 )
 
 container_image(
     name = "sig2",
-    base = "//docker/perapp:sig_debug",
-    files = [
-        "testdata/1-ff00_0_111/sig/cfg.json",
-        "testdata/1-ff00_0_111/sig/sig.toml",
-        "testdata/1-ff00_0_111/sig/fake_sciond.json",
-    ],
+    base = "//docker:sig_debug",
     entrypoint = [
         "/app/sig",
         "-config",
         "/sig.toml",
     ],
-    stamp = True,
+    files = [
+        "testdata/1-ff00_0_111/sig/cfg.json",
+        "testdata/1-ff00_0_111/sig/fake_sciond.json",
+        "testdata/1-ff00_0_111/sig/sig.toml",
+    ],
 )

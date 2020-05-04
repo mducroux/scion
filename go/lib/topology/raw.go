@@ -17,161 +17,78 @@ package topology
 
 import (
 	"net"
+	"strconv"
 
-	"github.com/scionproto/scion/go/lib/addr"
-	"github.com/scionproto/scion/go/lib/common"
 	"github.com/scionproto/scion/go/lib/serrors"
 	jsontopo "github.com/scionproto/scion/go/lib/topology/json"
-	"github.com/scionproto/scion/go/lib/topology/overlay"
 )
 
-func rawAddrMapToTopoAddr(ram jsontopo.NATSCIONAddressMap) (*TopoAddr, error) {
-	addressInfo, mustBeIPv6 := rawAddrMapExtractAddressInfo(ram)
-	mustBeIPv4 := !mustBeIPv6
-	if addressInfo == nil {
-		return nil, serrors.WithCtx(errAtLeastOnePub, "address", ram)
+func rawAddrToTopoAddr(rawAddr string) (*TopoAddr, error) {
+	a, err := rawAddrToUDPAddr(rawAddr)
+	if err != nil {
+		return nil, err
 	}
-	if addressInfo.Bind != nil {
-		return nil, serrors.WithCtx(errBindNotSupported, "address", addressInfo.Bind)
-	}
-	if addressInfo.Public.UnderlayPort != 0 {
-		return nil, serrors.WithCtx(errCustomUnderlayPort,
-			"port", addressInfo.Public.UnderlayPort)
-	}
-
-	ip := net.ParseIP(addressInfo.Public.Address.Addr)
-	if ip == nil {
-		return nil, serrors.WithCtx(errInvalidPub, "address", addressInfo.Public.Address.Addr)
-	}
-
-	if mustBeIPv6 && ip.To4() != nil {
-		return nil, serrors.WithCtx(errInvalidPub, "address", addressInfo.Public.Address.Addr)
-	}
-	if mustBeIPv4 {
-		// Convert to 4-byte format to simplify testing
-		ip = ip.To4()
-		if ip == nil {
-			return nil, serrors.WithCtx(errInvalidPub,
-				"address", addressInfo.Public.Address.Addr)
-		}
-	}
-
 	return &TopoAddr{
-		SCIONAddress: &net.UDPAddr{
-			IP:   ip,
-			Port: addressInfo.Public.Address.L4Port,
-		},
+		SCIONAddress: a,
 		UnderlayAddress: &net.UDPAddr{
-			IP:   append(ip[:0:0], ip...),
+			IP:   append(a.IP[:0:0], a.IP...),
 			Port: EndhostPort,
+			Zone: a.Zone,
 		},
 	}, nil
-}
-
-func rawAddrMapExtractAddressInfo(
-	ram jsontopo.NATSCIONAddressMap) (info *jsontopo.NATSCIONAddress, is6 bool) {
-
-	a, ok := ram["IPv6"]
-	if ok {
-		return a, true
-	}
-	a, ok = ram["IPv4"]
-	if ok {
-		return a, false
-	}
-	return nil, false
-}
-
-func rawBRAddrMapToUDPAddr(m jsontopo.UnderlayAddressMap) (*net.UDPAddr, error) {
-	addressInfo, mustBeIPv6 := rawBRAddrMapExtractAddressInfo(m)
-	mustBeIPv4 := !mustBeIPv6
-	if addressInfo == nil {
-		return nil, serrors.WithCtx(errAtLeastOnePub, "address", m)
-	}
-	if addressInfo.BindUnderlay != nil {
-		return nil, serrors.WithCtx(errBindNotSupported, "address", addressInfo.BindUnderlay)
-	}
-
-	ip := net.ParseIP(addressInfo.PublicUnderlay.Addr)
-	if ip == nil {
-		return nil, serrors.WithCtx(errInvalidPub, "address", addressInfo.PublicUnderlay.Addr)
-	}
-
-	if mustBeIPv6 && ip.To4() != nil {
-		return nil, serrors.WithCtx(errInvalidPub, "address", addressInfo.PublicUnderlay.Addr)
-	}
-	if mustBeIPv4 {
-		// Convert to 4-byte format to simplify testing
-		ip = ip.To4()
-		if ip == nil {
-			return nil, serrors.WithCtx(errInvalidPub, "address", addressInfo.PublicUnderlay.Addr)
-		}
-	}
-
-	return &net.UDPAddr{
-		IP:   append(ip[:0:0], ip...),
-		Port: addressInfo.PublicUnderlay.UnderlayPort,
-	}, nil
-}
-
-func rawBRAddrMapExtractAddressInfo(
-	m jsontopo.UnderlayAddressMap) (info *jsontopo.NATUnderlayAddress, is6 bool) {
-
-	a, ok := m["IPv6"]
-	if ok {
-		return a, true
-	}
-	a, ok = m["IPv4"]
-	if ok {
-		return a, false
-	}
-	return nil, false
-}
-
-func rawBRIntfRemoteBRAddr(b *jsontopo.BRInterface, o overlay.Type) (*net.UDPAddr, error) {
-	l3 := addr.HostFromIPStr(b.RemoteUnderlay.Addr)
-	if l3 == nil {
-		return nil, common.NewBasicError("Could not parse remote IP from string", nil,
-			"ip", b.RemoteUnderlay.Addr)
-	}
-	if !o.IsUDP() && (b.RemoteUnderlay.UnderlayPort != 0) {
-		return nil, serrors.WithCtx(errUnderlayPort, "addr", b.RemoteUnderlay)
-	}
-	return &net.UDPAddr{IP: l3.IP(), Port: b.RemoteUnderlay.UnderlayPort}, nil
 }
 
 func rawBRIntfTopoBRAddr(i *jsontopo.BRInterface) (*net.UDPAddr, error) {
-	if i.Underlay != "UDP/IPv4" && i.Underlay != "UDP/IPv6" {
-		return nil, serrors.WithCtx(errUnsupportedUnderlay, "underlay", i.Underlay)
+	rh, port, err := splitHostPort(i.Underlay.Public)
+	if err != nil {
+		return nil, err
 	}
-
-	mustBeIPv4 := i.Underlay == "UDP/IPv4"
-	mustBeIPv6 := i.Underlay == "UDP/IPv6"
-
-	var udpAddr net.UDPAddr
-	if i.BindUnderlay != nil {
-		udpAddr.IP = net.ParseIP(i.BindUnderlay.Addr)
+	var rawIP string
+	if i.Underlay.Bind != "" {
+		rawIP = i.Underlay.Bind
+	} else if rh != "" {
+		rawIP = rh
 	} else {
-		if i.PublicUnderlay == nil {
-			return nil, serrors.WithCtx(errUnderlayAddrNotFound, "underlay", i.Underlay)
-		}
-		udpAddr.IP = net.ParseIP(i.PublicUnderlay.Addr)
+		return nil, serrors.WithCtx(errUnderlayAddrNotFound, "underlay", i.Underlay)
 	}
-	if i.PublicUnderlay != nil {
-		udpAddr.Port = i.PublicUnderlay.UnderlayPort
-	}
+	return resolveToUDPAddr(rawIP, port)
+}
 
-	if udpAddr.IP == nil {
-		return nil, serrors.WithCtx(errInvalidPub, "address", i.PublicUnderlay.Addr)
+func splitHostPort(rawAddr string) (string, int, error) {
+	rh, rp, err := net.SplitHostPort(rawAddr)
+	if err != nil {
+		return "", 0, serrors.WrapStr("failed to split host port", err)
 	}
-	if mustBeIPv4 {
-		udpAddr.IP = udpAddr.IP.To4()
-		if udpAddr.IP == nil {
-			return nil, serrors.WithCtx(errExpectedIPv4FoundIPv6, "address", i.PublicUnderlay.Addr)
-		}
+	port, err := strconv.Atoi(rp)
+	if err != nil {
+		return "", 0, serrors.WrapStr("failed to parse port", err)
 	}
-	if mustBeIPv6 && udpAddr.IP.To4() != nil {
-		return nil, serrors.WithCtx(errExpectedIPv6FoundIPv4, "address", i.PublicUnderlay.Addr)
+	return rh, port, nil
+}
+
+func resolveToUDPAddr(rawIP string, port int) (*net.UDPAddr, error) {
+	ipAddr, err := net.ResolveIPAddr("ip", rawIP)
+	if err != nil {
+		return nil, serrors.WrapStr("failed to resolve ip", err, "raw", rawIP)
 	}
-	return &udpAddr, nil
+	if ipAddr.IP == nil {
+		return nil, serrors.New("missing/invalid IP", "raw", rawIP)
+	}
+	// Convert to 4-byte format to simplify testing
+	if ip4 := ipAddr.IP.To4(); ip4 != nil {
+		ipAddr.IP = ip4
+	}
+	return &net.UDPAddr{
+		IP:   append(ipAddr.IP[:0:0], ipAddr.IP...),
+		Port: port,
+		Zone: ipAddr.Zone,
+	}, nil
+}
+
+func rawAddrToUDPAddr(rawAddr string) (*net.UDPAddr, error) {
+	rh, port, err := splitHostPort(rawAddr)
+	if err != nil {
+		return nil, err
+	}
+	return resolveToUDPAddr(rh, port)
 }

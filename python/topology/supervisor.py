@@ -62,14 +62,14 @@ class SupervisorGenerator(object):
 
     def _br_entries(self, topo, cmd, base):
         entries = []
-        for k, v in topo.get("BorderRouters", {}).items():
+        for k, v in topo.get("border_routers", {}).items():
             conf = os.path.join(base, k, BR_CONFIG_NAME)
             entries.append((k, [cmd, "-config", conf]))
         return entries
 
     def _control_service_entries(self, topo, base):
         entries = []
-        for k, v in topo.get("ControlService", {}).items():
+        for k, v in topo.get("control_service", {}).items():
             # only a single control service instance per AS is currently supported
             if k.endswith("-1"):
                 conf = os.path.join(base, k, CS_CONFIG_NAME)
@@ -115,7 +115,7 @@ class SupervisorGenerator(object):
         elem_dir = os.path.join(self.args.output_dir, elem)
         config_file_path = os.path.join(elem_dir, DISP_CONFIG_NAME)
         self._write_elem_conf(
-            elem, ["bin/godispatcher", "-config", config_file_path], elem_dir)
+            elem, ["bin/dispatcher", "-config", config_file_path], elem_dir)
 
     def _common_entry(self, name, cmd_args, elem_dir=None):
         entry = {

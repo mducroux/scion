@@ -257,7 +257,8 @@ func (sm *sessMonitor) sendReq() {
 		return
 	}
 	sm.updateMsgId = sig_mgmt.MsgIdType(time.Now().UnixNano())
-	spld, err := sig_mgmt.NewPld(sm.updateMsgId, sig_mgmt.NewPollReq(sigcmn.MgmtAddr,
+	mgmtAddr := sigcmn.GetMgmtAddr()
+	spld, err := sig_mgmt.NewPld(sm.updateMsgId, sig_mgmt.NewPollReq(&mgmtAddr,
 		sm.sess.SessId))
 	if err != nil {
 		sm.logger.Error("sessMonitor: Error creating SIGCtrl payload", "err", err)
@@ -280,7 +281,7 @@ func (sm *sessMonitor) sendReq() {
 	}
 	raddr := sm.smRemote.Sig.CtrlSnetAddr(
 		sm.smRemote.SessPath.Path().Path(),
-		sm.smRemote.SessPath.Path().OverlayNextHop(),
+		sm.smRemote.SessPath.Path().UnderlayNextHop(),
 	)
 	// XXX(kormat): if this blocks, both the sessMon and egress worker
 	// goroutines will block. Can't just use SetWriteDeadline, as both
@@ -321,7 +322,7 @@ func (sm *sessMonitor) handleRep(rpld *sigdisp.RegPld) {
 			IA:          sm.smRemote.Sig.IA,
 			Host:        pollRep.Addr.Ctrl.Host(),
 			CtrlL4Port:  int(pollRep.Addr.Ctrl.Port),
-			EncapL4Port: int(pollRep.Addr.EncapPort),
+			EncapL4Port: int(pollRep.Addr.Data.Port),
 		}
 		// Update session's remote, if needed.
 		sessRemote := sm.sess.Remote()

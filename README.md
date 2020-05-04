@@ -1,6 +1,7 @@
 # SCION
 
-[![Documentation](https://godoc.org/github.com/scionproto/scion?status.svg)](http://godoc.org/github.com/scionproto/scion)
+[![Documentation](https://img.shields.io/badge/go.dev-reference-007d9c?logo=go&logoColor=white)](https://pkg.go.dev/github.com/scionproto/scion)
+[![ReadTheDocs](https://img.shields.io/badge/doc-reference-blue?version=latest&style=flat&label=docs&logo=read-the-docs&logoColor=white)](https://anapaya-scion.readthedocs-hosted.com/en/latest)
 [![Build Status](https://badge.buildkite.com/e7ca347d947c23883ad7c3a4d091c2df5ae7feb52b238d29a1.svg?branch=master)](https://buildkite.com/scionproto/scion)
 [![Go Report Card](https://goreportcard.com/badge/github.com/scionproto/scion)](https://goreportcard.com/report/github.com/scionproto/scion)
 [![GitHub issues](https://img.shields.io/github/issues/scionproto/scion/help%20wanted.svg?label=help%20wanted&color=blue)](https://github.com/scionproto/scion/issues?q=is%3Aopen+is%3Aissue+label%3A%22help+wanted%22)
@@ -44,24 +45,10 @@ Necessary steps in order to run SCION:
    rm ./bazel-1.2.0-installer-linux-x86_64.sh
    ```
 
-1. Make sure that you have a
-   [Go workspace](https://golang.org/doc/code.html#GOPATH) setup, and that
-   `~/.local/bin`, and `$GOPATH/bin` can be found in your `$PATH` variable. For example:
+1. Check out scion into the appropriate directory inside your workspace:
 
    ```bash
-   echo 'export GOPATH="$HOME/go"' >> ~/.profile
-   echo 'export PATH="$HOME/.local/bin:$GOPATH/bin:$PATH"' >> ~/.profile
-   source ~/.profile
-   mkdir -p "$GOPATH"
-   ```
-
-1. Check out scion into the appropriate directory inside your go workspace (or
-   put a symlink into the go workspace to point to your existing scion
-   checkout):
-
-   ```bash
-   mkdir -p "$GOPATH/src/github.com/scionproto"
-   cd "$GOPATH/src/github.com/scionproto"
+   cd "<workspace>"
    git clone https://github.com/scionproto/scion
    cd scion
    ```
