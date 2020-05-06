@@ -60,7 +60,7 @@ type PathRequestHandler struct {
 
 func (h *PathRequestHandler) Handle(ctx context.Context, conn net.Conn, src net.Addr,
 	pld *sciond.Pld) {
-
+	log.Info("mducroux_Handle_sciond_handlers")
 	defer conn.Close()
 	metricsDone := metrics.PathRequests.Start()
 	labels := metrics.PathRequestLabels{Dst: pld.PathReq.Dst.IA().I, Result: metrics.OkSuccess}

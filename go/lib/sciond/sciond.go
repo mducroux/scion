@@ -30,6 +30,7 @@ package sciond
 import (
 	"context"
 	"fmt"
+	"github.com/scionproto/scion/go/lib/log"
 	"net"
 
 	capnp "zombiezen.com/go/capnproto2"
@@ -157,14 +158,14 @@ func (c *conn) connect(ctx context.Context) (net.Conn, error) {
 
 func (c *conn) Paths(ctx context.Context, dst, src addr.IA,
 	f PathReqFlags) ([]snet.Path, error) {
-
+	log.Info("mducroux_sciond_Paths")
 	conn, err := c.connect(ctx)
 	if err != nil {
 		metrics.PathRequests.Inc(errorToPrometheusLabel(err))
 		return nil, serrors.Wrap(ErrUnableToConnect, err)
 	}
 	defer conn.Close()
-
+	log.Info("mducroux_paths_sciond_srcIA " + src.IAInt().String())
 	reply, err := roundTrip(
 		&Pld{
 			TraceId: tracing.IDFromCtx(ctx),
@@ -178,6 +179,7 @@ func (c *conn) Paths(ctx context.Context, dst, src addr.IA,
 		conn,
 	)
 	if err != nil {
+		log.Info("mducroux_paths_sciond_error")
 		metrics.PathRequests.Inc(errorToPrometheusLabel(err))
 		return nil, serrors.WrapStr("[sciond-API] Failed to get Paths", err)
 	}

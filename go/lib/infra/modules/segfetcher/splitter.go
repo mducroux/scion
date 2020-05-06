@@ -16,6 +16,8 @@ package segfetcher
 
 import (
 	"context"
+	"github.com/scionproto/scion/go/lib/log"
+	"strconv"
 
 	"github.com/scionproto/scion/go/lib/addr"
 	"github.com/scionproto/scion/go/lib/infra"
@@ -38,7 +40,7 @@ type MultiSegmentSplitter struct {
 // Split splits the request consisting of one or multiple segments.
 func (s *MultiSegmentSplitter) Split(ctx context.Context,
 	r Request) (RequestSet, error) {
-
+	log.Info("mducroux_Split_MultiSegmentSplitter")
 	if r.Src.IsZero() {
 		r.Src = s.Local
 	}
@@ -50,6 +52,8 @@ func (s *MultiSegmentSplitter) Split(ctx context.Context,
 	if err != nil {
 		return RequestSet{}, err
 	}
+	log.Info("mducroux_splitter_srcCore " + strconv.FormatBool(srcCore))
+	log.Info("mducroux_splitter_dstCore " + strconv.FormatBool(dstCore))
 	switch {
 	case !srcCore && !dstCore:
 		return RequestSet{

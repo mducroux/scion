@@ -16,6 +16,8 @@ package segfetcher
 
 import (
 	"context"
+	"github.com/scionproto/scion/go/lib/log"
+	"strconv"
 	"time"
 
 	"github.com/scionproto/scion/go/lib/addr"
@@ -67,19 +69,22 @@ type DefaultResolver struct {
 // stored and the set of requests that have to be requested at a remote server.
 func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 	req RequestSet) (Segments, RequestSet, error) {
-
+	log.Info("mducroux_Resolve")
 	var err error
 	if req.resolveUp() {
+		log.Info("mducroux_Resolve_Up")
 		if segs, req, err = r.resolveUpSegs(ctx, segs, req); err != nil {
 			return segs, req, err
 		}
 	}
 	if req.resolveDown() {
+		log.Info("mducroux_Resolve_Down")
 		if segs, req, err = r.resolveDownSegs(ctx, segs, req); err != nil {
 			return segs, req, err
 		}
 	}
 	if zeroUpDownSegsCached(req, segs) {
+		log.Info("mducroux_Resolve_zeroUpDownSegsCached")
 		for i := range req.Cores {
 			req.Cores[i].State = Loaded
 		}
@@ -88,33 +93,48 @@ func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 	// If there are still up or down segments to request, or if there are no
 	// core segments no more action can be done here.
 	if !req.upDownResolved() || req.Cores.IsEmpty() {
+		log.Info("mducroux_Resolve_no_more_action")
 		return segs, req, nil
 	}
 	// now resolve core segs:
 	req.Cores, err = r.expandCores(segs, req)
 	if err != nil {
+		log.Error("mducroux_Resolve_expandCores")
 		return segs, req, err
 	}
 	if req.Cores, err = r.resolveCores(ctx, req); err != nil {
+		log.Error("mducroux_Resolve_resolveCores")
 		return segs, req, err
 	}
 	if len(req.Cores) == 0 {
+		log.Info("mducroux_Resolve_len_req_Core_is_zero")
 		req.Cores = nil
 	}
+	log.Info("mducroux_Resolve_before_for")
 	for i, coreReq := range req.Cores {
+		log.Info("mducroux_Resolve_for_loop")
 		if local, err := r.LocalInfo.IsSegLocal(ctx, coreReq.Src, coreReq.Dst); err != nil {
+			log.Error("mducroux_Resolve_IsSegLocal")
 			return segs, req, err
 		} else if local {
 			coreReq.State = Cached
 		}
+		log.Info("mducroux_Resolve_coreReq.State_Cached " + strconv.FormatBool(coreReq.State == Cached))
+		log.Info("mducroux_Resolve_coreReq.State_Fetched " + strconv.FormatBool(coreReq.State == Fetched))
+		log.Info("mducroux_Resolve_coreReq.State_Fetch " + strconv.FormatBool(coreReq.State == Fetch))
 		if coreReq.State != Cached && coreReq.State != Fetched {
+			log.Info("mducroux_Resolve_segment_needs_fetching")
 			continue
 		}
+		log.Info("mducroux_Get from DB")
+		log.Info(coreReq.Dst.String())
+		log.Info(coreReq.Src.String())
 		coreRes, err := r.DB.Get(ctx, &query.Params{
 			StartsAt: []addr.IA{coreReq.Dst},
 			EndsAt:   []addr.IA{coreReq.Src},
 			SegTypes: []proto.PathSegType{proto.PathSegType_core},
 		})
+		log.Info("mducroux_Result_len: " + strconv.Itoa(len(coreRes)))
 		if err != nil {
 			return segs, req, err
 		}

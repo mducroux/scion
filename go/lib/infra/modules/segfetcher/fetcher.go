@@ -17,6 +17,7 @@ package segfetcher
 import (
 	"context"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/scionproto/scion/go/lib/addr"
@@ -116,11 +117,13 @@ type Fetcher struct {
 // of the request. First the request is validated and then depending on the
 // cache the segments are fetched from the remote server.
 func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) {
+	log.Info("mducroux_FetchSegs")
 	if f.Validator != nil {
 		if err := f.Validator.Validate(ctx, req); err != nil {
 			return Segments{}, serrors.Wrap(errValidate, err)
 		}
 	}
+	log.Info("mducroux_FetchSegs_Split")
 	reqSet, err := f.Splitter.Split(ctx, req)
 	if err != nil {
 		return Segments{}, err
@@ -129,10 +132,14 @@ func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) 
 	for i := 0; i < 3; i++ {
 		log.FromCtx(ctx).Trace("Request to process",
 			"req", reqSet, "segs", segs, "iteration", i+1)
+		log.Info("mducroux_FetchSegs_req.State_Cached " + strconv.FormatBool(req.State == Cached))
+		log.Info("mducroux_FetchSegs_req.State_Fetched " + strconv.FormatBool(req.State == Fetched))
+		log.Info("mducroux_FetchSegs_req.State_Fetch " + strconv.FormatBool(req.State == Fetch))
 		segs, reqSet, err = f.Resolver.Resolve(ctx, segs, reqSet)
 		if err != nil {
 			return Segments{}, serrors.Wrap(errDB, err)
 		}
+		log.Info("mducroux_fetcher_core_segs_len " + strconv.Itoa(len(segs.Core)))
 		log.FromCtx(ctx).Trace("After resolving",
 			"req", reqSet, "segs", segs, "iteration", i+1)
 		if reqSet.IsLoaded() {
@@ -156,6 +163,7 @@ func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) 
 		replies := f.Requester.Request(reqCtx, reqSet)
 		// TODO(lukedirtwalker): We need to have early trigger for the last request.
 		if reqSet, err = f.waitOnProcessed(ctx, replies, reqSet); err != nil {
+			log.Error("mducroux_fetcher_waitOnProcessed_error")
 			cancelF()
 			return Segments{}, err
 		}
@@ -166,12 +174,13 @@ func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) 
 
 func (f *Fetcher) waitOnProcessed(ctx context.Context, replies <-chan ReplyOrErr,
 	reqSet RequestSet) (RequestSet, error) {
-
+	log.Info("mducroux_fetcher_waitOnProcessed")
 	logger := log.FromCtx(ctx)
 	for reply := range replies {
 		// TODO(lukedirtwalker): Should we do this in go routines?
 		labels := metrics.RequestLabels{Result: metrics.ErrNotClassified}
 		if reply.Err != nil {
+			log.Error("mducroux_fetcher_waitOnProcessed_error_reply")
 			if serrors.IsTimeout(reply.Err) {
 				labels.Result = metrics.ErrTimeout
 			}
@@ -189,6 +198,7 @@ func (f *Fetcher) waitOnProcessed(ctx context.Context, replies <-chan ReplyOrErr
 			defer f.metrics.UpdateRevocation(r.Stats().RevStored(),
 				r.Stats().RevDBErrs(), r.Stats().RevVerifyErrors())
 			if err := r.Err(); err != nil {
+				log.Error("mducroux_fetcher_waitOnProcessed_error_r")
 				f.metrics.SegRequests(labels.WithResult(metrics.ErrProcess)).Inc()
 				return reqSet, err
 			}
