@@ -192,6 +192,7 @@ func (f *Fetcher) waitOnProcessed(ctx context.Context, replies <-chan ReplyOrErr
 			reqSet = updateRequestState(reqSet, reply.Req, Fetched)
 			continue
 		}
+		// Handle will verify the segment (VerifySegment in segverifier/segverifier.go)
 		r := f.ReplyHandler.Handle(ctx, replyToRecs(reply.Reply), f.verifyServer(reply), nil)
 		select {
 		case <-r.FullReplyProcessed():

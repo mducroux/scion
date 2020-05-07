@@ -16,6 +16,7 @@ package proto
 
 import (
 	"fmt"
+	"runtime/debug"
 	"time"
 
 	"github.com/scionproto/scion/go/lib/common"
@@ -57,6 +58,7 @@ func (s *SignS) Valid(threshold time.Duration) error {
 		return serrors.New("signature is unset")
 	}
 	if len(s.Signature) == 0 {
+		debug.PrintStack()
 		return serrors.New("missing signature", "type", s.Type)
 	}
 	if time.Now().Add(threshold).Before(s.Time()) {
