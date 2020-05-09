@@ -140,10 +140,6 @@ func validateFlags() {
 // possibility to have the same functionality, i.e. refresh, fetch all paths.
 // https://github.com/scionproto/scion/issues/3348
 func getPaths(sdConn sciond.Connector, ctx context.Context) ([]snet.Path, error) {
-	log.Info("mducroux_getPaths_paths.go")
-	// test, _ := addr.IAFromString("1-ff00:0000:0110")
-	// SrcIA := test.IAInt().IA()
-	// paths, err := sdConn.Paths(ctx, dstIA, SrcIA,
 	paths, err := sdConn.Paths(ctx, dstIA, addr.IA{},
 		sciond.PathReqFlags{Refresh: *refresh, PathCount: uint16(*maxPaths)})
 	if err != nil {

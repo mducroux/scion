@@ -148,7 +148,6 @@ func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 			log.Error("mducroux_Resolve_Err_allRevoked")
 			return segs, req, err
 		}
-		log.Info("mducroux_Resolve setting manually allRev to false")
 		if allRev && coreReq.State != Fetched {
 			log.Info("mducroux_Resolve_Fetch")
 			req.Cores[i].State = Fetch

@@ -107,9 +107,7 @@ type Path struct {
 }
 
 func pathReplyToPaths(pathReply *PathReply, dst addr.IA) ([]snet.Path, error) {
-	log.Info("mducroux_apitypes_pathReplyToPaths")
 	if pathReply.ErrorCode != ErrorOk {
-		log.Info("mducroux_apitypes_pathReplyToPaths_error")
 		return nil, serrors.New("Path lookup had an error", "err_code", pathReply.ErrorCode)
 	}
 	paths := make([]snet.Path, 0, len(pathReply.Entries))

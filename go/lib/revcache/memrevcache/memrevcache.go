@@ -76,7 +76,6 @@ func (c *memRevCache) get(key string) (*path_mgmt.SignedRevInfo, bool) {
 
 func (c *memRevCache) Insert(ctx context.Context, rev *path_mgmt.SignedRevInfo) (bool, error) {
 	//log.FromCtx(ctx).Info("mducroux_Insert_memrevcache")
-	panic("insert")
 	//c.lock.Lock()
 	//defer c.lock.Unlock()
 	//newInfo, err := rev.RevInfo()
@@ -105,6 +104,7 @@ func (c *memRevCache) Insert(ctx context.Context, rev *path_mgmt.SignedRevInfo) 
 	//	return true, nil
 	//}
 	//return false, nil
+	return false, nil
 }
 
 func (c *memRevCache) DeleteExpired(_ context.Context) (int64, error) {
