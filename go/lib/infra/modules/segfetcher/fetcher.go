@@ -142,6 +142,10 @@ func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) 
 		log.Info("mducroux_fetcher_core_segs_len " + strconv.Itoa(len(segs.Core)))
 		log.FromCtx(ctx).Trace("After resolving",
 			"req", reqSet, "segs", segs, "iteration", i+1)
+		log.Info("mducroux_FetchSegs_reqSet.Cores[0].State_Cached " + strconv.FormatBool(reqSet.Cores[0].State == Cached))
+		log.Info("mducroux_FetchSegs_reqSet.Cores[0].State_Fetched " + strconv.FormatBool(reqSet.Cores[0].State == Fetched))
+		log.Info("mducroux_FetchSegs_reqSet.Cores[0].State_Fetch " + strconv.FormatBool(reqSet.Cores[0].State == Fetch))
+		log.Info("mducroux_FetchSegs_reqSet.Cores[0].State_Loaded " + strconv.FormatBool(reqSet.Cores[0].State == Loaded))
 		if reqSet.IsLoaded() {
 			break
 		}
@@ -160,6 +164,9 @@ func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) 
 		// revocations. See also: https://github.com/scionproto/scion/issues/3052
 		reqCtx, cancelF := context.WithTimeout(ctx, 3*time.Second)
 		reqCtx = log.CtxWith(reqCtx, log.FromCtx(ctx))
+
+
+
 		replies := f.Requester.Request(reqCtx, reqSet)
 		// TODO(lukedirtwalker): We need to have early trigger for the last request.
 		if reqSet, err = f.waitOnProcessed(ctx, replies, reqSet); err != nil {

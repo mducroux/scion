@@ -73,7 +73,7 @@ func (h *PathRequestHandler) Handle(ctx context.Context, conn net.Conn, src net.
 	if err != nil {
 		logger.Error("Unable to get paths", "err", err)
 		labels.Result = segfetcher.ErrToMetricsLabel(err)
-		getPathsReply = &sciond.PathReply{}
+		// getPathsReply = &sciond.PathReply{} // TODO(mducroux): fix this
 	}
 	// Always reply, as the Fetcher will fill in the relevant error bits of the reply
 	reply := &sciond.Pld{

@@ -78,6 +78,7 @@ func (p *Pather) GetPaths(ctx context.Context, dst addr.IA,
 		return nil, err
 	}
 	if len(paths) == 0 {
+		log.Error("mducroux_Pather_error in paths")
 		return nil, ErrNoPaths
 	}
 	return paths, nil

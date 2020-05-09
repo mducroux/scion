@@ -126,7 +126,7 @@ func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 			log.Info("mducroux_Resolve_segment_needs_fetching")
 			continue
 		}
-		log.Info("mducroux_Get from DB")
+		log.Info("mducroux_Resolve_Get_from_DB")
 		log.Info(coreReq.Dst.String())
 		log.Info(coreReq.Src.String())
 		coreRes, err := r.DB.Get(ctx, &query.Params{
@@ -134,17 +134,26 @@ func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 			EndsAt:   []addr.IA{coreReq.Src},
 			SegTypes: []proto.PathSegType{proto.PathSegType_core},
 		})
-		log.Info("mducroux_Result_len: " + strconv.Itoa(len(coreRes)))
+		log.Info("mducroux_Resolve_Result_len: " + strconv.Itoa(len(coreRes)))
+		if len(coreRes) >= 1 {
+			log.Info("mducroux_Resolve_Result_len_segs: " + strconv.Itoa(len(coreRes.Segs())))
+		}
 		if err != nil {
+			log.Error("mducroux_Resolve_Err_Get")
 			return segs, req, err
 		}
 		allRev, err := r.allRevoked(ctx, coreRes)
+		log.Info("mducroux_Resolve_allRev: " + strconv.FormatBool(allRev))
 		if err != nil {
+			log.Error("mducroux_Resolve_Err_allRevoked")
 			return segs, req, err
 		}
+		log.Info("mducroux_Resolve setting manually allRev to false")
 		if allRev && coreReq.State != Fetched {
+			log.Info("mducroux_Resolve_Fetch")
 			req.Cores[i].State = Fetch
 		} else {
+			log.Info("mducroux_Resolve_Loaded")
 			req.Cores[i].State = Loaded
 		}
 		segs.Core = append(segs.Core, coreRes.Segs()...)
