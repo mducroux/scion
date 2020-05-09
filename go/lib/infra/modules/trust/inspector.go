@@ -23,7 +23,6 @@ import (
 	"github.com/scionproto/scion/go/lib/addr"
 	"github.com/scionproto/scion/go/lib/infra"
 	"github.com/scionproto/scion/go/lib/infra/modules/trust/internal/metrics"
-	"github.com/scionproto/scion/go/lib/log"
 	"github.com/scionproto/scion/go/lib/scrypto"
 	"github.com/scionproto/scion/go/lib/scrypto/trc"
 )
@@ -76,26 +75,25 @@ func (i DefaultInspector) ByAttributes(ctx context.Context, isd addr.ISD,
 func (i DefaultInspector) HasAttributes(ctx context.Context, ia addr.IA,
 	opts infra.ASInspectorOpts) (bool, error) {
 	//log.Info("mducroux_HasAttributes")
-	l := metrics.InspectorLabels{Type: metrics.HasAttributes}
-	ctx = metrics.CtxWith(ctx, metrics.ASInspector)
-	span, ctx := opentracing.StartSpanFromContext(ctx, "has_attributes")
-	defer span.Finish()
-	opentracingext.Component.Set(span, "trust")
-	span.SetTag("ia", ia)
-	span.SetTag("opts", opts)
+	//l := metrics.InspectorLabels{Type: metrics.HasAttributes}
+	//ctx = metrics.CtxWith(ctx, metrics.ASInspector)
+	//span, ctx := opentracing.StartSpanFromContext(ctx, "has_attributes")
+	//defer span.Finish()
+	//opentracingext.Component.Set(span, "trust")
+	//span.SetTag("ia", ia)
+	//span.SetTag("opts", opts)
 
-	trcOpts := infra.TRCOpts{TrustStoreOpts: opts.TrustStoreOpts}
-	trc, err := i.Provider.GetTRC(ctx, TRCID{ISD: ia.I, Version: scrypto.LatestVer}, trcOpts)
-	defer metrics.Inspector.Request(l.WithResult(errToLabel(err))).Inc()
-	if err != nil {
-		return false, err
-	}
-	_, ok := trc.PrimaryASes[ia.A]
-	if !ok && (uint64(ia.A)&0x00000000ffff0000 == 0) { // not one of our mock ASes
-		log.Info("mducroux_notPrimaryAS", "AS", ia.A.String())
-		return false, nil
-	}
-	log.Info("mducroux_HasAttributes_before_return", "required_attributes", opts.RequiredAttributes)
+	//trcOpts := infra.TRCOpts{TrustStoreOpts: opts.TrustStoreOpts}
+	//trc, err := i.Provider.GetTRC(ctx, TRCID{ISD: ia.I, Version: scrypto.LatestVer}, trcOpts)
+	//defer metrics.Inspector.Request(l.WithResult(errToLabel(err))).Inc()
+	//if err != nil {
+	//	return false, err
+	//}
+	//entry, ok := trc.PrimaryASes[ia.A]
+	//if !ok {
+	//	return false, nil
+	//}
+	//return hasAttributes(entry, opts.RequiredAttributes), nil
 	return true, nil
 }
 

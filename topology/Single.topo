@@ -1,12 +1,13 @@
 --- # Single Topology
 ASes:
-  "1-ff00:0:110": # old 1-11
+  "1-ff00:0:110":
     core: true
     voting: true
     authoritative: true
     issuing: true
     mtu: 1500
 links:
+  - {a: "1-ff00:0:110#4", b: "1-ff00:1:3#2", linkAtoB: CORE}
 CAs:
   CA1-1:
     ISD: 1
