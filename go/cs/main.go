@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -105,6 +106,23 @@ func realMain() int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
+
+	f, err := os.Create("cpu.prof")
+	if err != nil {
+		log.Crit("could not create CPU profile: ", "err", err)
+	}
+	log.Info("mducroux create CPU profile")
+	defer f.Close()
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Crit("could not start CPU profile: ", "err", err)
+	}
+	log.Info("mducroux start CPU profile")
+
+	defer log.Info("mducroux test1")
+	defer func(){
+		log.Info("mducroux test2")
+	}()
+
 	defer log.Flush()
 	defer env.LogAppStopped(common.CPService, cfg.General.ID)
 	defer log.HandlePanic()
@@ -114,6 +132,11 @@ func realMain() int {
 	}
 	metrics.InitBSMetrics()
 	metrics.InitPSMetrics()
+
+	defer log.Info("mducroux test10")
+	defer func(){
+		log.Info("mducroux test20")
+	}()
 
 	pathDB, revCache, err := pathstorage.NewPathStorage(cfg.PathDB)
 	if err != nil {
@@ -367,11 +390,19 @@ func realMain() int {
 	}
 	defer tasks.Kill()
 
+	defer log.Info("mducroux test888")
+	defer func(){
+		pprof.StopCPUProfile()
+		log.Info("mducroux test999")
+	}()
+
 	select {
 	case <-fatal.ShutdownChan():
 		// Whenever we receive a SIGINT or SIGTERM we exit without an error.
+		log.Info("mducroux exited without an error")
 		return 0
 	case <-fatal.FatalChan():
+		log.Info("mducroux exited with an error")
 		return 1
 	}
 }

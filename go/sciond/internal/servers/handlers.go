@@ -37,11 +37,11 @@ import (
 
 const (
 	// DefaultReplyTimeout is allocated to SCIOND handlers to reply back to the client.
-	DefaultReplyTimeout = 2 * time.Second
+	DefaultReplyTimeout = 2 * time.Second //TODO(mducroux): DefaultReplyTimeout = 200 * time.Second
 	// DefaultWorkTimeout is allocated to SCIOND handlers work (e.g., network
 	// traffic and crypto operations)
-	DefaultWorkTimeout = 10 * time.Second
-	DefaultEarlyReply  = 200 * time.Millisecond
+	DefaultWorkTimeout = 10 * time.Second //TODO(mducroux): DefaultWorkTimeout = 1000 * time.Second
+	DefaultEarlyReply  = 200 * time.Millisecond //TODO(mducroux): DefaultEarlyReply  = 20000 * time.Millisecond
 	// DefaultServiceTTL is the TTL value for ServiceInfoReply objects,
 	// expressed in seconds.
 	DefaultServiceTTL uint32 = 300

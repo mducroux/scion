@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/scionproto/scion/go/lib/addr"
@@ -140,6 +141,8 @@ func validateFlags() {
 // possibility to have the same functionality, i.e. refresh, fetch all paths.
 // https://github.com/scionproto/scion/issues/3348
 func getPaths(sdConn sciond.Connector, ctx context.Context) ([]snet.Path, error) {
+	log.Info("mducroux maxPaths")
+	log.Info(strconv.Itoa(*maxPaths))
 	paths, err := sdConn.Paths(ctx, dstIA, addr.IA{},
 		sciond.PathReqFlags{Refresh: *refresh, PathCount: uint16(*maxPaths)})
 	if err != nil {
