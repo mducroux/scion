@@ -15,6 +15,7 @@
 package segreq
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/scionproto/scion/go/cs/handlers"
@@ -65,8 +66,8 @@ func (h *handler) Handle(request *infra.Request) *infra.HandlerResult {
 	segReq, ok := request.Message.(*path_mgmt.SegReq)
 	// test, _ := addr.IAFromString("1-ff00:0000:0110")
 	// segReq.RawSrcIA = test.IAInt()
-	logger.Debug("mducroux_SrcIA " + segReq.SrcIA().String())
-	logger.Debug("mducroux_DstIA " + segReq.DstIA().String())
+	logger.Debug("mducroux_segreq_Handle_SrcIA " + segReq.SrcIA().String())
+	logger.Debug("mducroux_segreq_Handle_DstIA " + segReq.DstIA().String())
 	if !ok {
 		logger.Error("[segReqHandler] wrong message type, expected path_mgmt.SegReq",
 			"msg", request.Message, "type", common.TypeOf(request.Message))
@@ -93,6 +94,7 @@ func (h *handler) Handle(request *infra.Request) *infra.HandlerResult {
 		metrics.Requests.Count(labels.WithResult(segfetcher.ErrToMetricsLabel(err))).Inc()
 		return infra.MetricsErrInternal
 	}
+	logger.Debug("mducroux_segreq_handler_nb_fetched_seg " + strconv.Itoa(len(segs.Core)))
 	labels.SegType = metrics.DetermineReplyType(segs)
 	revs, err := revcache.RelevantRevInfos(ctx, h.revCache, segs.Up, segs.Core, segs.Down)
 	if err != nil {

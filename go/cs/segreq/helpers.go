@@ -17,6 +17,7 @@ package segreq
 import (
 	"context"
 	"fmt"
+	"math"
 
 	"github.com/scionproto/scion/go/lib/addr"
 	"github.com/scionproto/scion/go/lib/ctrl/seg"
@@ -42,7 +43,7 @@ func (c *CoreChecker) IsCore(ctx context.Context, ia addr.IA) (bool, error) {
 
 func segsToRecs(ctx context.Context, segs segfetcher.Segments) []*seg.Meta {
 	logger := log.FromCtx(ctx)
-	lup, lcore, ldown := limit(len(segs.Up), len(segs.Core), len(segs.Down), 9)
+	lup, lcore, ldown := limit(len(segs.Up), len(segs.Core), len(segs.Down), math.MaxInt32) // TODO(mducroux): revert to 9
 	recs := make([]*seg.Meta, 0, len(segs.Up)+len(segs.Core)+len(segs.Down))
 	for i := range segs.Up {
 		if i == lup {
