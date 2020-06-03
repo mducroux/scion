@@ -98,7 +98,6 @@ func NewFetcher(requestAPI segfetcher.RequestAPI, pathDB pathdb.PathDB, inspecto
 func (f *fetcher) GetPaths(ctx context.Context, req *sciond.PathReq,
 	earlyReplyInterval time.Duration) (*sciond.PathReply, error) {
 	logger := log.FromCtx(ctx)
-	logger.Error("mducroux_GetPaths_fetcher")
 	// TODO(lukedirtwalker): move to validator, but we need to keep sciond
 	// error codes.
 	req = req.Copy()
@@ -121,7 +120,6 @@ func (f *fetcher) GetPaths(ctx context.Context, req *sciond.PathReq,
 	case errors.Is(err, segfetcher.ErrNoPaths):
 		return &sciond.PathReply{ErrorCode: sciond.ErrorNoPaths}, err
 	default:
-		logger.Error("mducroux_GetPaths_fetcher_error")
 		return &sciond.PathReply{ErrorCode: sciond.ErrorInternal}, err
 	}
 	var paths []sciond.PathReplyEntry

@@ -16,9 +16,6 @@ package segreq
 
 import (
 	"context"
-	"github.com/scionproto/scion/go/lib/log"
-	"strconv"
-
 	"github.com/scionproto/scion/go/lib/addr"
 	"github.com/scionproto/scion/go/lib/infra"
 	"github.com/scionproto/scion/go/lib/infra/modules/segfetcher"
@@ -32,7 +29,6 @@ type Splitter struct {
 
 func (s *Splitter) Split(ctx context.Context,
 	r segfetcher.Request) (segfetcher.RequestSet, error) {
-	log.Info("mducroux_Split_splitter")
 	srcCore, err := s.isCore(ctx, r.Src)
 	if err != nil {
 		return segfetcher.RequestSet{}, err
@@ -41,8 +37,6 @@ func (s *Splitter) Split(ctx context.Context,
 	if err != nil {
 		return segfetcher.RequestSet{}, err
 	}
-	log.Info("mducroux_splitter_srcCore " + strconv.FormatBool(srcCore))
-	log.Info("mducroux_splitter_dstCore " + strconv.FormatBool(dstCore))
 	switch {
 	case !srcCore && dstCore:
 		return segfetcher.RequestSet{Up: r}, nil

@@ -75,7 +75,6 @@ func (i DefaultInspector) ByAttributes(ctx context.Context, isd addr.ISD,
 // The first return value is always false for non-primary ASes.
 func (i DefaultInspector) HasAttributes(ctx context.Context, ia addr.IA,
 	opts infra.ASInspectorOpts) (bool, error) {
-	log.Info("mducroux_HasAttributes")
 	l := metrics.InspectorLabels{Type: metrics.HasAttributes}
 	ctx = metrics.CtxWith(ctx, metrics.ASInspector)
 	span, ctx := opentracing.StartSpanFromContext(ctx, "has_attributes")
