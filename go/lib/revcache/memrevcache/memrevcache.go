@@ -16,11 +16,13 @@ package memrevcache
 
 import (
 	"context"
-	cache "github.com/patrickmn/go-cache"
-	"github.com/scionproto/scion/go/lib/ctrl/path_mgmt"
-	"github.com/scionproto/scion/go/lib/revcache"
 	"sync"
 	"time"
+
+	cache "github.com/patrickmn/go-cache"
+
+	"github.com/scionproto/scion/go/lib/ctrl/path_mgmt"
+	"github.com/scionproto/scion/go/lib/revcache"
 )
 
 var _ revcache.RevCache = (*memRevCache)(nil)
@@ -75,7 +77,7 @@ func (c *memRevCache) get(key string) (*path_mgmt.SignedRevInfo, bool) {
 	return obj.(*path_mgmt.SignedRevInfo), true
 }
 
-func (c *memRevCache) Insert(ctx context.Context, rev *path_mgmt.SignedRevInfo) (bool, error) {
+func (c *memRevCache) Insert(_ context.Context, rev *path_mgmt.SignedRevInfo) (bool, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	newInfo, err := rev.RevInfo()

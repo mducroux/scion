@@ -157,12 +157,14 @@ func (c *conn) connect(ctx context.Context) (net.Conn, error) {
 
 func (c *conn) Paths(ctx context.Context, dst, src addr.IA,
 	f PathReqFlags) ([]snet.Path, error) {
+
 	conn, err := c.connect(ctx)
 	if err != nil {
 		metrics.PathRequests.Inc(errorToPrometheusLabel(err))
 		return nil, serrors.Wrap(ErrUnableToConnect, err)
 	}
 	defer conn.Close()
+	
 	reply, err := roundTrip(
 		&Pld{
 			TraceId: tracing.IDFromCtx(ctx),
