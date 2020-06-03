@@ -42,21 +42,50 @@ func (c *CoreChecker) IsCore(ctx context.Context, ia addr.IA) (bool, error) {
 
 func segsToRecs(ctx context.Context, segs segfetcher.Segments) []*seg.Meta {
 	logger := log.FromCtx(ctx)
+	lup, lcore, ldown := limit(len(segs.Up), len(segs.Core), len(segs.Down), 9)
 	recs := make([]*seg.Meta, 0, len(segs.Up)+len(segs.Core)+len(segs.Down))
-	for _, s := range segs.Up {
+	for i := range segs.Up {
+		if i == lup {
+			break
+		}
+		s := segs.Up[i]
 		logger.Trace(fmt.Sprintf("[segReqHandler:collectSegs] up %v -> %v",
 			s.FirstIA(), s.LastIA()), "seg", s.GetLoggingID())
 		recs = append(recs, seg.NewMeta(s, proto.PathSegType_up))
 	}
-	for _, s := range segs.Core {
+	for i := range segs.Core {
+		if i == lcore {
+			break
+		}
+		s := segs.Core[i]
 		logger.Trace(fmt.Sprintf("[segReqHandler:collectSegs] core %v -> %v",
 			s.FirstIA(), s.LastIA()), "seg", s.GetLoggingID())
 		recs = append(recs, seg.NewMeta(s, proto.PathSegType_core))
 	}
-	for _, s := range segs.Down {
+	for i := range segs.Down {
+		if i == ldown {
+			break
+		}
+		s := segs.Down[i]
 		logger.Trace(fmt.Sprintf("[segReqHandler:collectSegs] down %v -> %v",
 			s.FirstIA(), s.LastIA()), "seg", s.GetLoggingID())
 		recs = append(recs, seg.NewMeta(s, proto.PathSegType_down))
 	}
 	return recs
+}
+
+// XXX(roosd): Dirty hack to avoid exceeding jumbo frames until quic is implemented.
+// Revert tainted code after quic is implemented.
+func limit(upSegs, coreSegs, downSegs, all int) (int, int, int) {
+	for upSegs+coreSegs+downSegs > all {
+		switch {
+		case upSegs >= coreSegs && upSegs >= downSegs:
+			upSegs--
+		case coreSegs >= upSegs && coreSegs >= downSegs:
+			coreSegs--
+		default:
+			downSegs--
+		}
+	}
+	return upSegs, coreSegs, downSegs
 }

@@ -160,7 +160,7 @@ class AddressProxy(yaml.YAMLObject):
 
 class PortGenerator(object):
     def __init__(self):
-        self.iter = iter(range(31000, 350000)) #TODO(mducroux): re-add iter(range(31000, 35000))
+        self.iter = iter(range(31000, 35000)) #TODO(mducroux): re-add iter(range(31000, 350000))
         self._ports = defaultdict(lambda: next(self.iter))
 
     def register(self, id_):
