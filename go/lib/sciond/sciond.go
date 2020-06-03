@@ -164,7 +164,7 @@ func (c *conn) Paths(ctx context.Context, dst, src addr.IA,
 		return nil, serrors.Wrap(ErrUnableToConnect, err)
 	}
 	defer conn.Close()
-	
+
 	reply, err := roundTrip(
 		&Pld{
 			TraceId: tracing.IDFromCtx(ctx),

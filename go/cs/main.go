@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -107,16 +106,16 @@ func realMain() int {
 		return 1
 	}
 
-	f, err := os.Create("cpu.prof")
-	if err != nil {
-		log.Crit("could not create CPU profile: ", "err", err)
-	}
-	log.Info("mducroux create CPU profile")
-	defer f.Close()
-	if err := pprof.StartCPUProfile(f); err != nil {
-		log.Crit("could not start CPU profile: ", "err", err)
-	}
-	log.Info("mducroux start CPU profile")
+	//f, err := os.Create("cpu.prof")
+	//if err != nil {
+	//	log.Crit("could not create CPU profile: ", "err", err)
+	//}
+	//log.Info("mducroux create CPU profile")
+	//defer f.Close()
+	//if err := pprof.StartCPUProfile(f); err != nil {
+	//	log.Crit("could not start CPU profile: ", "err", err)
+	//}
+	//log.Info("mducroux start CPU profile")
 
 	defer log.Flush()
 	defer env.LogAppStopped(common.CPService, cfg.General.ID)
@@ -381,9 +380,9 @@ func realMain() int {
 
 	defer tasks.Kill()
 
-	defer func(){
-		pprof.StopCPUProfile()
-	}()
+	//defer func(){
+	//	pprof.StopCPUProfile()
+	//}()
 
 	select {
 	case <-fatal.ShutdownChan():
