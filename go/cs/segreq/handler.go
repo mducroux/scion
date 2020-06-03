@@ -64,8 +64,6 @@ func (h *handler) Handle(request *infra.Request) *infra.HandlerResult {
 		Result: metrics.ErrInternal,
 	}
 	segReq, ok := request.Message.(*path_mgmt.SegReq)
-	// test, _ := addr.IAFromString("1-ff00:0000:0110")
-	// segReq.RawSrcIA = test.IAInt()
 	logger.Debug("mducroux_segreq_Handle_SrcIA " + segReq.SrcIA().String())
 	logger.Debug("mducroux_segreq_Handle_DstIA " + segReq.DstIA().String())
 	if !ok {

@@ -90,12 +90,12 @@ func (p *Propagator) Name() string {
 // interfaces. In a non-core beacon server, child interfaces are the target
 // interfaces.
 func (p *Propagator) Run(ctx context.Context) {
-	p.tick.now = time.Now()
-	if err := p.run(ctx); err != nil {
-		log.FromCtx(ctx).Error("[beaconing.Propagator] Unable to propagate beacons", "err", err)
-	}
-	p.tick.updateLast()
-	metrics.Propagator.Runtime().Add(time.Since(p.tick.now).Seconds())
+	//p.tick.now = time.Now()
+	//if err := p.run(ctx); err != nil {
+	//	log.FromCtx(ctx).Error("[beaconing.Propagator] Unable to propagate beacons", "err", err)
+	//}
+	//p.tick.updateLast()
+	//metrics.Propagator.Runtime().Add(time.Since(p.tick.now).Seconds())
 }
 
 func (p *Propagator) run(ctx context.Context) error {

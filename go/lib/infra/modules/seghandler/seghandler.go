@@ -87,14 +87,11 @@ func (h *Handler) verifyAndStore(ctx context.Context,
 			result.early <- result.stats.segDB.Total()
 		}
 	}()
-	log.FromCtx(ctx).Error("DEBUG juagargi", "units", units)
 	for u := 0; u < units; u++ {
 		select {
 		case verifiedUnit := <-verifiedCh:
-			log.FromCtx(ctx).Error("DEBUG juagargi at verifiedUnit")
 			verifiedUnits = append(verifiedUnits, verifiedUnit)
 		case <-earlyTrigger:
-			log.FromCtx(ctx).Error("DEBUG juagargi at earlyTrigger")
 			// Reduce u since this does not process an additional unit.
 			u--
 			verifyErrs, err := h.storeResults(ctx, verifiedUnits, hpGroupID, &result.stats)
@@ -113,9 +110,7 @@ func (h *Handler) verifyAndStore(ctx context.Context,
 			earlyTrigger = nil
 		}
 	}
-	log.FromCtx(ctx).Error("DEBUG juagargi out of loop", "len(verifiedUnits)", len(verifiedUnits))
 	verifyErrs, err := h.storeResults(ctx, verifiedUnits, hpGroupID, &result.stats)
-	log.FromCtx(ctx).Error("DEBUG juagargi", "len(verifyErrs)", len(verifyErrs))
 	result.verifyErrs = append(allVerifyErrs, verifyErrs...)
 	result.stats.verificationErrs(result.verifyErrs)
 	switch {

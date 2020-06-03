@@ -55,7 +55,7 @@ const (
 
 	// ShutdownGraceInterval is the time applications wait after issuing a
 	// clean shutdown signal, before forcerfully tearing down the application.
-	ShutdownGraceInterval = 5 * time.Second //TODO(mducroux): forceful shutdown time_allowance
+	ShutdownGraceInterval = 5 * time.Second
 )
 
 var sighupC chan os.Signal

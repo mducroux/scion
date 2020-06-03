@@ -54,7 +54,7 @@ import (
 )
 
 const (
-	ShutdownWaitTimeout = 5 * time.Second //TODO(mducroux): ShutdownWaitTimeout
+	ShutdownWaitTimeout = 5 * time.Second
 )
 
 var (

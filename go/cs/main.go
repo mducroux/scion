@@ -118,11 +118,6 @@ func realMain() int {
 	}
 	log.Info("mducroux start CPU profile")
 
-	defer log.Info("mducroux test1")
-	defer func(){
-		log.Info("mducroux test2")
-	}()
-
 	defer log.Flush()
 	defer env.LogAppStopped(common.CPService, cfg.General.ID)
 	defer log.HandlePanic()
@@ -132,11 +127,6 @@ func realMain() int {
 	}
 	metrics.InitBSMetrics()
 	metrics.InitPSMetrics()
-
-	defer log.Info("mducroux test10")
-	defer func(){
-		log.Info("mducroux test20")
-	}()
 
 	pathDB, revCache, err := pathstorage.NewPathStorage(cfg.PathDB)
 	if err != nil {
@@ -388,21 +378,18 @@ func realMain() int {
 		log.Crit("Unable to start tasks", "err", err)
 		return 1
 	}
+
 	defer tasks.Kill()
 
-	defer log.Info("mducroux test888")
 	defer func(){
 		pprof.StopCPUProfile()
-		log.Info("mducroux test999")
 	}()
 
 	select {
 	case <-fatal.ShutdownChan():
 		// Whenever we receive a SIGINT or SIGTERM we exit without an error.
-		log.Info("mducroux exited without an error")
 		return 0
 	case <-fatal.FatalChan():
-		log.Info("mducroux exited with an error")
 		return 1
 	}
 }

@@ -71,11 +71,11 @@ func (o *Originator) Name() string {
 
 // Run originates core and downstream beacons.
 func (o *Originator) Run(ctx context.Context) {
-	o.tick.now = time.Now()
-	o.originateBeacons(ctx, topology.Core)
-	o.originateBeacons(ctx, topology.Child)
-	metrics.Originator.Runtime().Add(time.Since(o.tick.now).Seconds())
-	o.tick.updateLast()
+	//o.tick.now = time.Now()
+	//o.originateBeacons(ctx, topology.Core)
+	//o.originateBeacons(ctx, topology.Child)
+	//metrics.Originator.Runtime().Add(time.Since(o.tick.now).Seconds())
+	//o.tick.updateLast()
 }
 
 // originateBeacons creates and sends a beacon for each active interface of

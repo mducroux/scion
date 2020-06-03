@@ -20,6 +20,7 @@ import (
 	"github.com/scionproto/scion/go/lib/ctrl/path_mgmt"
 	"github.com/scionproto/scion/go/lib/revcache"
 	"sync"
+	"time"
 )
 
 var _ revcache.RevCache = (*memRevCache)(nil)
@@ -75,35 +76,31 @@ func (c *memRevCache) get(key string) (*path_mgmt.SignedRevInfo, bool) {
 }
 
 func (c *memRevCache) Insert(ctx context.Context, rev *path_mgmt.SignedRevInfo) (bool, error) {
-	//log.FromCtx(ctx).Info("mducroux_Insert_memrevcache")
-	//c.lock.Lock()
-	//defer c.lock.Unlock()
-	//newInfo, err := rev.RevInfo()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//ttl := newInfo.Expiration().Sub(time.Now())
-	////log.FromCtx(ctx).Info("mducroux_Insert_memrevcache_IA" + newInfo.IA().String())
-	////log.FromCtx(ctx).Info("mducroux_Insert_memrevcache_ttl " + ttl.String())
-	//if ttl <= 0 {
-	//	return false, nil
-	//}
-	//k := revcache.NewKey(newInfo.IA(), newInfo.IfID)
-	//key := k.String()
-	//val, ok := c.get(key)
-	//if !ok {
-	//	c.c.Set(key, rev, ttl)
-	//	return true, nil
-	//}
-	//existingInfo, err := val.RevInfo()
-	//if err != nil {
-	//	panic(err)
-	//}
-	//if newInfo.Timestamp().After(existingInfo.Timestamp()) {
-	//	c.c.Set(key, rev, ttl)
-	//	return true, nil
-	//}
-	//return false, nil
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	newInfo, err := rev.RevInfo()
+	if err != nil {
+		panic(err)
+	}
+	ttl := newInfo.Expiration().Sub(time.Now())
+	if ttl <= 0 {
+		return false, nil
+	}
+	k := revcache.NewKey(newInfo.IA(), newInfo.IfID)
+	key := k.String()
+	val, ok := c.get(key)
+	if !ok {
+		c.c.Set(key, rev, ttl)
+		return true, nil
+	}
+	existingInfo, err := val.RevInfo()
+	if err != nil {
+		panic(err)
+	}
+	if newInfo.Timestamp().After(existingInfo.Timestamp()) {
+		c.c.Set(key, rev, ttl)
+		return true, nil
+	}
 	return false, nil
 }
 
