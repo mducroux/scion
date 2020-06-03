@@ -115,8 +115,6 @@ func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 			EndsAt:   []addr.IA{coreReq.Src},
 			SegTypes: []proto.PathSegType{proto.PathSegType_core},
 		})
-		if len(coreRes) >= 1 {
-		}
 		if err != nil {
 			return segs, req, err
 		}

@@ -377,7 +377,6 @@ func realMain() int {
 		log.Crit("Unable to start tasks", "err", err)
 		return 1
 	}
-
 	defer tasks.Kill()
 
 	//defer func(){
