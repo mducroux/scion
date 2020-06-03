@@ -17,7 +17,6 @@ package segfetcher
 import (
 	"context"
 	"errors"
-	"strconv"
 	"time"
 
 	"github.com/scionproto/scion/go/lib/addr"
@@ -51,7 +50,6 @@ type Pather struct {
 // containing an empty path is returned.
 func (p *Pather) GetPaths(ctx context.Context, dst addr.IA,
 	refresh bool) ([]*combinator.Path, error) {
-	log.Info("mducroux_GetPaths_pather")
 	if dst.I == 0 {
 		return nil, serrors.WithCtx(ErrBadDst, "dst", dst)
 	}
@@ -66,19 +64,14 @@ func (p *Pather) GetPaths(ctx context.Context, dst addr.IA,
 	}
 	segs, err := p.Fetcher.FetchSegs(ctx, req)
 	if err != nil {
-		log.Error("mducroux_GetPaths_pather_error_FetchSegs")
 		return nil, err
 	}
-	log.Info("mducroux_Pather_fetched_Segs_len")
-	log.Info(strconv.Itoa(len(segs.Core)))
 	paths := p.buildAllPaths(src, dst, segs)
 	paths, err = p.filterRevoked(ctx, paths)
 	if err != nil {
-		log.Error("mducroux_Pather_error in filterRevoked")
 		return nil, err
 	}
 	if len(paths) == 0 {
-		log.Error("mducroux_Pather_error in paths")
 		return nil, ErrNoPaths
 	}
 	return paths, nil

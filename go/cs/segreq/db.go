@@ -16,7 +16,6 @@ package segreq
 
 import (
 	"context"
-	"github.com/scionproto/scion/go/lib/log"
 	"time"
 
 	"github.com/scionproto/scion/go/lib/addr"
@@ -58,9 +57,6 @@ type CoreLocalInfo struct {
 // IsSegLocal returns whether the segments described by src and dst would be a
 // core segments or a local down segment.
 func (i *CoreLocalInfo) IsSegLocal(ctx context.Context, src, dst addr.IA) (bool, error) {
-	log.Info("mducroux_IsSegLocal_CoreLocalInfo")
-	log.Info("mducroux_IsSegLocal_dst.I " + dst.I.String())
-	log.Info("mducroux_IsSegLocal_dst.I " + i.LocalIA.I.String())
 	// All local core and down segments.
 	if dst.I == i.LocalIA.I {
 		return true, nil
