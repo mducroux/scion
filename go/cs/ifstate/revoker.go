@@ -83,51 +83,51 @@ func (r *Revoker) Name() string {
 // Run issues revocations for interfaces that have timed out
 // and renews revocations for revoked interfaces.
 func (r *Revoker) Run(ctx context.Context) {
-	logger := log.FromCtx(ctx)
-	revs := make(map[common.IFIDType]*path_mgmt.SignedRevInfo)
-	for ifid, intf := range r.cfg.Intfs.All() {
-		labelsIssued := metrics.IssuedLabels{
-			IfID:    ifid,
-			NeighIA: intf.TopoInfo().IA,
-			State:   metrics.RevRenew,
-		}
-		labelsDuration := metrics.DurationLabels{
-			IfID:    ifid,
-			NeighIA: intf.TopoInfo().IA,
-		}
-
-		if intf.Revoke() && !r.hasValidRevocation(intf) {
-			if intf.Revocation() == nil {
-				labelsIssued.State = metrics.RevNew
-				logger.Info("[ifstate.Revoker] interface went down", "ifid", ifid)
-			}
-			srev, err := r.createSignedRev(ifid)
-			if err != nil {
-				logger.Error("[ifstate.Revoker] Failed to create revocation",
-					"ifid", ifid, "err", err)
-				continue
-			}
-			if err := intf.SetRevocation(srev); err != nil {
-				logger.Error("[ifstate.Revoker] Failed to revoke!", "ifid", ifid, "err", err)
-				continue
-			}
-			if rev, err := srev.RevInfo(); err != nil {
-				metrics.Ifstate.Duration(labelsDuration).Add(float64(rev.RawTTL))
-			}
-			metrics.Ifstate.Issued(labelsIssued).Inc()
-			revs[ifid] = srev
-		}
-	}
-	if len(revs) > 0 {
-		wg := &sync.WaitGroup{}
-		if err := r.cfg.RevInserter.InsertRevocations(ctx, toSlice(revs)...); err != nil {
-			logger.Error("[ifstate.Revoker] Failed to insert revocations in store", "err", err)
-			// still continue to try to push it to BR/PS.
-		}
-		r.pushRevocationsToBRs(ctx, revs, wg)
-		r.pushRevocationsToPS(ctx, revs)
-		wg.Wait()
-	}
+	//logger := log.FromCtx(ctx)
+	//revs := make(map[common.IFIDType]*path_mgmt.SignedRevInfo)
+	//for ifid, intf := range r.cfg.Intfs.All() {
+	//	labelsIssued := metrics.IssuedLabels{
+	//		IfID:    ifid,
+	//		NeighIA: intf.TopoInfo().IA,
+	//		State:   metrics.RevRenew,
+	//	}
+	//	labelsDuration := metrics.DurationLabels{
+	//		IfID:    ifid,
+	//		NeighIA: intf.TopoInfo().IA,
+	//	}
+	//
+	//	if intf.Revoke() && !r.hasValidRevocation(intf) {
+	//		if intf.Revocation() == nil {
+	//			labelsIssued.State = metrics.RevNew
+	//			logger.Info("[ifstate.Revoker] interface went down", "ifid", ifid)
+	//		}
+	//		srev, err := r.createSignedRev(ifid)
+	//		if err != nil {
+	//			logger.Error("[ifstate.Revoker] Failed to create revocation",
+	//				"ifid", ifid, "err", err)
+	//			continue
+	//		}
+	//		if err := intf.SetRevocation(srev); err != nil {
+	//			logger.Error("[ifstate.Revoker] Failed to revoke!", "ifid", ifid, "err", err)
+	//			continue
+	//		}
+	//		if rev, err := srev.RevInfo(); err != nil {
+	//			metrics.Ifstate.Duration(labelsDuration).Add(float64(rev.RawTTL))
+	//		}
+	//		metrics.Ifstate.Issued(labelsIssued).Inc()
+	//		revs[ifid] = srev
+	//	}
+	//}
+	//if len(revs) > 0 {
+	//	wg := &sync.WaitGroup{}
+	//	if err := r.cfg.RevInserter.InsertRevocations(ctx, toSlice(revs)...); err != nil {
+	//		logger.Error("[ifstate.Revoker] Failed to insert revocations in store", "err", err)
+	//		// still continue to try to push it to BR/PS.
+	//	}
+	//	r.pushRevocationsToBRs(ctx, revs, wg)
+	//	r.pushRevocationsToPS(ctx, revs)
+	//	wg.Wait()
+	//}
 }
 
 func (r *Revoker) hasValidRevocation(intf *Interface) bool {
