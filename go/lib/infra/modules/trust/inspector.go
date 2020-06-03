@@ -16,7 +16,6 @@ package trust
 
 import (
 	"context"
-	"github.com/scionproto/scion/go/lib/log"
 
 	"github.com/opentracing/opentracing-go"
 	opentracingext "github.com/opentracing/opentracing-go/ext"
