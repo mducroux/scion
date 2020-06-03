@@ -16,6 +16,7 @@ package segreq
 
 import (
 	"context"
+	"github.com/scionproto/scion/go/lib/log"
 	"time"
 
 	"github.com/scionproto/scion/go/lib/addr"

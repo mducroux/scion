@@ -60,6 +60,7 @@ type PathRequestHandler struct {
 
 func (h *PathRequestHandler) Handle(ctx context.Context, conn net.Conn, src net.Addr,
 	pld *sciond.Pld) {
+
 	defer conn.Close()
 	metricsDone := metrics.PathRequests.Start()
 	labels := metrics.PathRequestLabels{Dst: pld.PathReq.Dst.IA().I, Result: metrics.OkSuccess}
@@ -68,7 +69,6 @@ func (h *PathRequestHandler) Handle(ctx context.Context, conn net.Conn, src net.
 	workCtx, workCancelF := context.WithTimeout(ctx, DefaultWorkTimeout)
 	defer workCancelF()
 	getPathsReply, err := h.Fetcher.GetPaths(workCtx, pld.PathReq, DefaultEarlyReply)
-	logger.Debug("juagargi after GetPaths", "err", err, "getPathsReply", getPathsReply)
 	if err != nil {
 		logger.Error("Unable to get paths", "err", err)
 		labels.Result = segfetcher.ErrToMetricsLabel(err)

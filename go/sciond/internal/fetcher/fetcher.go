@@ -97,7 +97,7 @@ func NewFetcher(requestAPI segfetcher.RequestAPI, pathDB pathdb.PathDB, inspecto
 // means no early reply attempt is made.
 func (f *fetcher) GetPaths(ctx context.Context, req *sciond.PathReq,
 	earlyReplyInterval time.Duration) (*sciond.PathReply, error) {
-	logger := log.FromCtx(ctx)
+
 	// TODO(lukedirtwalker): move to validator, but we need to keep sciond
 	// error codes.
 	req = req.Copy()

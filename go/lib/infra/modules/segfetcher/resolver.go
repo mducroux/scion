@@ -67,6 +67,7 @@ type DefaultResolver struct {
 // stored and the set of requests that have to be requested at a remote server.
 func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 	req RequestSet) (Segments, RequestSet, error) {
+
 	var err error
 	if req.resolveUp() {
 		if segs, req, err = r.resolveUpSegs(ctx, segs, req); err != nil {
@@ -114,6 +115,8 @@ func (r *DefaultResolver) Resolve(ctx context.Context, segs Segments,
 			EndsAt:   []addr.IA{coreReq.Src},
 			SegTypes: []proto.PathSegType{proto.PathSegType_core},
 		})
+		if len(coreRes) >= 1 {
+		}
 		if err != nil {
 			return segs, req, err
 		}

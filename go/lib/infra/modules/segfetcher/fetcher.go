@@ -153,9 +153,6 @@ func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) 
 		// revocations. See also: https://github.com/scionproto/scion/issues/3052
 		reqCtx, cancelF := context.WithTimeout(ctx, 3*time.Second)
 		reqCtx = log.CtxWith(reqCtx, log.FromCtx(ctx))
-
-
-
 		replies := f.Requester.Request(reqCtx, reqSet)
 		// TODO(lukedirtwalker): We need to have early trigger for the last request.
 		if reqSet, err = f.waitOnProcessed(ctx, replies, reqSet); err != nil {
@@ -169,6 +166,7 @@ func (f *Fetcher) FetchSegs(ctx context.Context, req Request) (Segments, error) 
 
 func (f *Fetcher) waitOnProcessed(ctx context.Context, replies <-chan ReplyOrErr,
 	reqSet RequestSet) (RequestSet, error) {
+
 	logger := log.FromCtx(ctx)
 	for reply := range replies {
 		// TODO(lukedirtwalker): Should we do this in go routines?

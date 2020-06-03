@@ -15,7 +15,6 @@
 package segreq
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/scionproto/scion/go/cs/handlers"
@@ -80,6 +79,7 @@ func (h *handler) Handle(request *infra.Request) *infra.HandlerResult {
 		return infra.MetricsErrInternal
 	}
 	sendAck := messenger.SendAckHelper(ctx, rw)
+
 	segs, err := h.fetcher.FetchSegs(ctx,
 		segfetcher.Request{Src: segReq.SrcIA(), Dst: segReq.DstIA()})
 	if err != nil {

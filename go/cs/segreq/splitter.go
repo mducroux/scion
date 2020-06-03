@@ -16,6 +16,7 @@ package segreq
 
 import (
 	"context"
+
 	"github.com/scionproto/scion/go/lib/addr"
 	"github.com/scionproto/scion/go/lib/infra"
 	"github.com/scionproto/scion/go/lib/infra/modules/segfetcher"
@@ -29,6 +30,7 @@ type Splitter struct {
 
 func (s *Splitter) Split(ctx context.Context,
 	r segfetcher.Request) (segfetcher.RequestSet, error) {
+
 	srcCore, err := s.isCore(ctx, r.Src)
 	if err != nil {
 		return segfetcher.RequestSet{}, err

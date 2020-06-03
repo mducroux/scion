@@ -50,6 +50,7 @@ type Pather struct {
 // containing an empty path is returned.
 func (p *Pather) GetPaths(ctx context.Context, dst addr.IA,
 	refresh bool) ([]*combinator.Path, error) {
+
 	if dst.I == 0 {
 		return nil, serrors.WithCtx(ErrBadDst, "dst", dst)
 	}
