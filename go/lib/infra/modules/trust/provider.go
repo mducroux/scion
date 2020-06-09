@@ -132,12 +132,12 @@ func (p Provider) getCheckedTRC(parentCtx context.Context, id TRCID,
 	if opts.AllowInactive {
 		return decTRC.TRC, decTRC.Raw, nil
 	}
-	logger.Trace("[TrustStore:Provider] Get latest TRC info", "isd", id.ISD)
+	//logger.Trace("[TrustStore:Provider] Get latest TRC info", "isd", id.ISD)
 	info, err := p.DB.GetTRCInfo(ctx, TRCID{ISD: id.ISD, Version: scrypto.LatestVer})
 	if err != nil {
 		return nil, nil, serrors.WrapStr("unable to get latest TRC info", err)
 	}
-	logger.Trace("[TrustStore:Provider] Latest TRC info", "isd", id.ISD, "version", info.Version)
+	//logger.Trace("[TrustStore:Provider] Latest TRC info", "isd", id.ISD, "version", info.Version)
 	switch {
 	case info.Version > decTRC.TRC.Version+1:
 		return nil, nil, serrors.WrapStr("inactivated by latest TRC version", ErrInactive,
