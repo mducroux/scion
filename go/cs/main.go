@@ -20,11 +20,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/scionproto/scion/go/cs/segsyncer"
+	"github.com/scionproto/scion/go/lib/revcache"
 	"hash"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"sync"
 	"time"
 
@@ -104,16 +107,16 @@ func realMain() int {
 		return 1
 	}
 
-	//f, err := os.Create("cpu.prof")
-	//if err != nil {
-	//	log.Crit("could not create CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux create CPU profile")
-	//defer f.Close()
-	//if err := pprof.StartCPUProfile(f); err != nil {
-	//	log.Crit("could not start CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux start CPU profile")
+	f, err := os.Create("cpu_cs.prof")
+	if err != nil {
+		log.Crit("could not create CPU profile: ", "err", err)
+	}
+	log.Info("mducroux create CPU profile")
+	defer f.Close()
+	if err := pprof.StartCPUProfile(f); err != nil {
+		log.Crit("could not start CPU profile: ", "err", err)
+	}
+	log.Info("mducroux start CPU profile")
 
 	defer log.Flush()
 	defer env.LogAppStopped(common.CPService, cfg.General.ID)
@@ -377,9 +380,9 @@ func realMain() int {
 	}
 	defer tasks.Kill()
 
-	//defer func(){
-	//	pprof.StopCPUProfile()
-	//}()
+	defer func(){
+		pprof.StopCPUProfile()
+	}()
 
 	select {
 	case <-fatal.ShutdownChan():
@@ -446,54 +449,54 @@ func (t *periodicTasks) Start() error {
 		return nil
 	}
 	t.running = true
-	//topo := t.topoProvider.Get()
-	//bs := topo.PublicAddress(addr.SvcBS, cfg.General.ID)
-	//if bs == nil {
-	//	return serrors.New("Unable to find topo address")
-	//}
+	topo := t.topoProvider.Get()
+	bs := topo.PublicAddress(addr.SvcBS, cfg.General.ID)
+	if bs == nil {
+		return serrors.New("Unable to find topo address")
+	}
 
-	//var err error
-	//if t.registrars, err = t.startSegRegRunners(); err != nil {
-	//	return err
-	//}
-	//if t.revoker, err = t.startRevoker(); err != nil {
-	//	return err
-	//}
-	//if t.keepalive, err = t.startKeepaliveSender(bs); err != nil {
-	//	return err
-	//}
-	//if t.originator, err = t.startOriginator(bs); err != nil {
-	//	return err
-	//}
-	//if t.propagator, err = t.startPropagator(bs); err != nil {
-	//	return err
-	//}
+	var err error
+	if t.registrars, err = t.startSegRegRunners(); err != nil {
+		return err
+	}
+	if t.revoker, err = t.startRevoker(); err != nil {
+		return err
+	}
+	if t.keepalive, err = t.startKeepaliveSender(bs); err != nil {
+		return err
+	}
+	if t.originator, err = t.startOriginator(bs); err != nil {
+		return err
+	}
+	if t.propagator, err = t.startPropagator(bs); err != nil {
+		return err
+	}
 
-	//t.beaconCleaner = periodic.Start(
-	//	beaconstorage.NewBeaconCleaner(t.store),
-	//	30*time.Second, 30*time.Second)
-	//t.revCleaner = periodic.Start(
-	//	beaconstorage.NewRevocationCleaner(t.store), 5*time.Second, 5*time.Second)
+	t.beaconCleaner = periodic.Start(
+		beaconstorage.NewBeaconCleaner(t.store),
+		30*time.Second, 30*time.Second)
+	t.revCleaner = periodic.Start(
+		beaconstorage.NewRevocationCleaner(t.store), 5*time.Second, 5*time.Second)
 
 	// t.corePusher = t.startCorePusher()
 	// t.reissuance = t.startReissuance(t.corePusher)
 
-	//if itopo.Get().Core() {
-	//	t.segSyncers, err = segsyncer.StartAll(t.args, t.msgr)
-	//	if err != nil {
-	//		return common.NewBasicError("Unable to start seg syncer", err)
-	//	}
-	//}
-	//t.pathDBCleaner = periodic.Start(pathdb.NewCleaner(t.args.PathDB, "ps_segments"),
-	//	300*time.Second, 295*time.Second)
+	if itopo.Get().Core() {
+		t.segSyncers, err = segsyncer.StartAll(t.args, t.msgr)
+		if err != nil {
+			return common.NewBasicError("Unable to start seg syncer", err)
+		}
+	}
+	t.pathDBCleaner = periodic.Start(pathdb.NewCleaner(t.args.PathDB, "ps_segments"),
+		300*time.Second, 295*time.Second)
 	// TODO(roosd): Re-enable
 	// t.cryptosyncer = periodic.Start(&cryptosyncer.Syncer{
 	// 	DB:    t.trustDB,
 	// 	Msger: t.msger,
 	// 	IA:    t.args.IA,
 	// }, cfg.PS.CryptoSyncInterval.Duration, cfg.PS.CryptoSyncInterval.Duration)
-	//t.rcCleaner = periodic.Start(revcache.NewCleaner(t.args.RevCache, "ps_revocation"),
-	//	10*time.Second, 10*time.Second)
+	t.rcCleaner = periodic.Start(revcache.NewCleaner(t.args.RevCache, "ps_revocation"),
+		10*time.Second, 10*time.Second)
 
 	log.Info("Started periodic tasks")
 	return nil

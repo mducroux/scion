@@ -40,7 +40,7 @@ const (
 	DefaultReplyTimeout = 2 * time.Second
 	// DefaultWorkTimeout is allocated to SCIOND handlers work (e.g., network
 	// traffic and crypto operations)
-	DefaultWorkTimeout = 10 * time.Second
+	DefaultWorkTimeout = 1000 * time.Second // TODO(mducroux) revert to 10 sec
 	DefaultEarlyReply  = 200 * time.Millisecond
 	// DefaultServiceTTL is the TTL value for ServiceInfoReply objects,
 	// expressed in seconds.
