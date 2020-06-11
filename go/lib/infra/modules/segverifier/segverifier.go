@@ -181,7 +181,6 @@ func VerifySegment(ctx context.Context, verifier infra.Verifier, server net.Addr
 			return serrors.Wrap(ErrSegment, err, "seg", segment,
 				"asEntry", asEntry, "sign", segment.RawASEntries[i].Sign)
 		}
-		log.Info("mducroux_verifying_segments")
 	}
 	return nil
 }
