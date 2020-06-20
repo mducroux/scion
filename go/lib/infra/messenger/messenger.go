@@ -106,7 +106,7 @@ import (
 )
 
 const (
-	DefaultHandlerTimeout = 10 * time.Second
+	DefaultHandlerTimeout = 1000 * time.Second // TODO(mducroux): revert to 10s
 )
 
 // Config can be used to customize the behavior of the Messenger.

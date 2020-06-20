@@ -57,6 +57,17 @@ func NewHandler(args handlers.HandlerArgs) infra.Handler {
 }
 
 func (h *handler) Handle(request *infra.Request) *infra.HandlerResult {
+	//f, err := os.Create("cpu_segreq_handler.prof")
+	//if err != nil {
+	//	log.Crit("could not create CPU profile: ", "err", err)
+	//}
+	//log.Info("mducroux create CPU profile")
+	//defer f.Close()
+	//if err := pprof.StartCPUProfile(f); err != nil {
+	//	log.Crit("could not start CPU profile: ", "err", err)
+	//}
+	//log.Info("mducroux start CPU profile")
+
 	ctx := request.Context()
 	logger := log.FromCtx(ctx)
 	labels := metrics.RequestLabels{
@@ -113,6 +124,11 @@ func (h *handler) Handle(request *infra.Request) *infra.HandlerResult {
 	metrics.Requests.Count(labels).Inc()
 	metrics.Requests.RepliedSegs(labels.RequestOkLabels).Add(float64(len(reply.Recs.Recs)))
 	metrics.Requests.RepliedRevs(labels.RequestOkLabels).Add(float64(len(reply.Recs.SRevInfos)))
+
+	//defer func() {
+	//	pprof.StopCPUProfile()
+	//}()
+
 	return infra.MetricsResultOk
 }
 
