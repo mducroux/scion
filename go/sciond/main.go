@@ -24,7 +24,6 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"path/filepath"
-	"runtime/trace"
 	"time"
 
 	"github.com/BurntSushi/toml"
@@ -81,19 +80,6 @@ func realMain() int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-
-	fp, err := os.Create("trace_sd.out")
-	if err != nil {
-		log.Crit("could not create CPU profile: ", "err", err)
-	}
-	log.Info("mducroux create trace")
-
-	if err := trace.Start(fp); err != nil {
-		log.Crit("could not start trace: ", "err", err)
-	}
-	log.Info("mducroux start trace")
-	defer fp.Close()
-
 	defer log.Flush()
 	defer env.LogAppStopped("SD", cfg.General.ID)
 	defer log.HandlePanic()
@@ -195,11 +181,6 @@ func realMain() int {
 	http.HandleFunc("/info", env.InfoHandler)
 	http.HandleFunc("/topology", itopo.TopologyHandler)
 	cfg.Metrics.StartPrometheus()
-
-	defer func() {
-		trace.Stop()
-	}()
-
 	select {
 	case <-fatal.ShutdownChan():
 		// Whenever we receive a SIGINT or SIGTERM we exit without an error.

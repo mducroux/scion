@@ -56,19 +56,6 @@ func init() {
 }
 
 func main() {
-	//f, err := os.Create("cpu_paths.prof")
-	//if err != nil {
-	//	log.Crit("could not create CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux create CPU profile")
-	//defer f.Close()
-	//if err := pprof.StartCPUProfile(f); err != nil {
-	//	log.Crit("could not start CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux start CPU profile")
-	//
-	//defer pprof.StopCPUProfile()
-
 	flag.StringVar(&logConsole, "log.console", "info",
 		"Console logging level: trace|debug|info|warn|error|crit")
 	validateFlags()

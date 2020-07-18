@@ -31,6 +31,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+
 	capnp "zombiezen.com/go/capnproto2"
 	"zombiezen.com/go/capnproto2/pogs"
 
@@ -157,17 +158,6 @@ func (c *conn) connect(ctx context.Context) (net.Conn, error) {
 func (c *conn) Paths(ctx context.Context, dst, src addr.IA,
 	f PathReqFlags) ([]snet.Path, error) {
 
-	//fp, err := os.Create("cpu_sciond_paths.prof")
-	//if err != nil {
-	//	log.Crit("could not create CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux create CPU profile")
-	//defer fp.Close()
-	//if err := pprof.StartCPUProfile(fp); err != nil {
-	//	log.Crit("could not start CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux start CPU profile")
-
 	conn, err := c.connect(ctx)
 	if err != nil {
 		metrics.PathRequests.Inc(errorToPrometheusLabel(err))
@@ -192,11 +182,6 @@ func (c *conn) Paths(ctx context.Context, dst, src addr.IA,
 		return nil, serrors.WrapStr("[sciond-API] Failed to get Paths", err)
 	}
 	metrics.PathRequests.Inc(metrics.OkSuccess)
-
-	//defer func() {
-	//	pprof.StopCPUProfile()
-	//}()
-
 	return pathReplyToPaths(reply.PathReply, dst)
 }
 

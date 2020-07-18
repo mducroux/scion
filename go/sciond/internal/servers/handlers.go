@@ -61,17 +61,6 @@ type PathRequestHandler struct {
 func (h *PathRequestHandler) Handle(ctx context.Context, conn net.Conn, src net.Addr,
 	pld *sciond.Pld) {
 
-	//fp, err := os.Create("cpu_sciond_path_request.prof")
-	//if err != nil {
-	//	log.Crit("could not create CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux create CPU profile")
-	//defer fp.Close()
-	//if err := pprof.StartCPUProfile(fp); err != nil {
-	//	log.Crit("could not start CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux start CPU profile")
-
 	defer conn.Close()
 	metricsDone := metrics.PathRequests.Start()
 	labels := metrics.PathRequestLabels{Dst: pld.PathReq.Dst.IA().I, Result: metrics.OkSuccess}
@@ -83,7 +72,6 @@ func (h *PathRequestHandler) Handle(ctx context.Context, conn net.Conn, src net.
 	if err != nil {
 		logger.Error("Unable to get paths", "err", err)
 		labels.Result = segfetcher.ErrToMetricsLabel(err)
-		// getPathsReply = &sciond.PathReply{} // TODO(mducroux): fix this
 	}
 	// Always reply, as the Fetcher will fill in the relevant error bits of the reply
 	reply := &sciond.Pld{
@@ -101,11 +89,6 @@ func (h *PathRequestHandler) Handle(ctx context.Context, conn net.Conn, src net.
 		"num_paths", len(getPathsReply.Entries),
 		"err_code", getPathsReply.ErrorCode)
 	logger.Trace("Full reply", "paths", getPathsReply)
-
-	//defer func() {
-	//	pprof.StopCPUProfile()
-	//}()
-
 	metricsDone(labels)
 }
 

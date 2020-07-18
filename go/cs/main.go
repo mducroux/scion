@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime/trace"
 	"sync"
 	"time"
 
@@ -104,29 +103,6 @@ func realMain() int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-
-	fp, err := os.Create("trace_cs.out")
-	if err != nil {
-		log.Crit("could not create CPU profile: ", "err", err)
-	}
-	log.Info("mducroux create trace")
-	defer fp.Close()
-	if err := trace.Start(fp); err != nil {
-		log.Crit("could not start trace: ", "err", err)
-	}
-	log.Info("mducroux start trace")
-	defer trace.Stop()
-	//f, err := os.Create("cpu_cs.prof")
-	//if err != nil {
-	//	log.Crit("could not create CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux create CPU profile")
-	//defer f.Close()
-	//if err := pprof.StartCPUProfile(f); err != nil {
-	//	log.Crit("could not start CPU profile: ", "err", err)
-	//}
-	//log.Info("mducroux start CPU profile")
-
 	defer log.Flush()
 	defer env.LogAppStopped(common.CPService, cfg.General.ID)
 	defer log.HandlePanic()
@@ -388,10 +364,6 @@ func realMain() int {
 		return 1
 	}
 	defer tasks.Kill()
-
-	//defer func() {
-	//	pprof.StopCPUProfile()
-	//}()
 
 	select {
 	case <-fatal.ShutdownChan():
